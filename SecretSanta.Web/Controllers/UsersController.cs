@@ -43,6 +43,11 @@ namespace SecretSanta.Web.Controllers
         [Route("")]
         public async Task<IHttpActionResult> RegisterUser(RegisterUserViewModel model)
         {
+            if(model == null)
+            {
+                return this.BadRequest("Invalid user data");
+            }
+
             if (!ModelState.IsValid)
             {
                 return this.BadRequest(this.ModelState);

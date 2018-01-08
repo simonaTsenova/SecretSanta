@@ -4,6 +4,8 @@ using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
 using System;
 using System.Linq;
+using System.Net.Http;
+using System.Web;
 
 namespace SecretSanta.Services
 {
@@ -23,6 +25,14 @@ namespace SecretSanta.Services
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException("Unit of work cannot be null");
             this.userService = userService ?? throw new ArgumentNullException("Service cannot be null");
             this.userSessionFactory = userSessionFactory ?? throw new ArgumentNullException("Factory cannot be null");
+        }
+
+        private HttpRequestMessage CurrentRequest
+        {
+            get
+            {
+                return (HttpRequestMessage)HttpContext.Current.Items["MS_HttpRequestMessage"];
+            }
         }
 
         public void CreateUserSession(string userName, string authtoken)
@@ -52,6 +62,41 @@ namespace SecretSanta.Services
                 this.unitOfWork.Commit();
             }
 
+        }
+
+        public void InvalidateUserSession()
+        {
+            string authToken = this.GetCurrentBearerAuthrorizationToken();
+            if(authToken == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            var currentUserSession = this.userSessionRepository.All
+                .Where(s => s.Authtoken == authToken)
+                .FirstOrDefault();
+
+            if(currentUserSession == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            this.userSessionRepository.Delete(currentUserSession);
+            this.unitOfWork.Commit();
+        }
+
+        private string GetCurrentBearerAuthrorizationToken()
+        {
+            string authToken = null;
+            if (CurrentRequest.Headers.Authorization != null)
+            {
+                if (CurrentRequest.Headers.Authorization.Scheme == "Bearer")
+                {
+                    authToken = CurrentRequest.Headers.Authorization.Parameter;
+                }
+            }
+
+            return authToken;
         }
     }
 }

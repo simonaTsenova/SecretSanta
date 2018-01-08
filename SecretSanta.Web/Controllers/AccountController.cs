@@ -1,4 +1,6 @@
-﻿using SecretSanta.Services.Contracts;
+﻿using Microsoft.AspNet.Identity;
+using Microsoft.Owin.Security;
+using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Models.Users;
 using System;
 using System.Collections.Generic;
@@ -19,6 +21,14 @@ namespace SecretSanta.Web.Controllers
         public AccountController(ISessionService sessionService)
         {
             this.sessionService = sessionService ?? throw new ArgumentNullException("Service cannot be null");
+        }
+
+        public IAuthenticationManager AuthenticationManager
+        {
+            get
+            {
+                return Request.GetOwinContext().Authentication;
+            }
         }
 
         // POST ~/logins
@@ -71,6 +81,18 @@ namespace SecretSanta.Web.Controllers
             }
 
             return this.ResponseMessage(response);
+        }
+
+        // POST ~/logins/{username}
+        [HttpPost]
+        [Route("")]
+        public IHttpActionResult LogoutUser()
+        {
+            this.AuthenticationManager.SignOut(DefaultAuthenticationTypes.ExternalBearer);
+
+            this.sessionService.InvalidateUserSession();
+
+            return this.Ok();
         }
     }
 }

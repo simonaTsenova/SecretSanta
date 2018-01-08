@@ -5,5 +5,7 @@
         void CreateUserSession(string userName, string authtoken);
 
         void DeleteExpiredSessions();
+
+        void InvalidateUserSession();
     }
 }
