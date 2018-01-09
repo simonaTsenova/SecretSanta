@@ -4,6 +4,7 @@ using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Models.Users;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity.Core;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -90,9 +91,20 @@ namespace SecretSanta.Web.Controllers
         {
             this.AuthenticationManager.SignOut(DefaultAuthenticationTypes.ExternalBearer);
 
-            this.sessionService.InvalidateUserSession();
+            try
+            {
+                this.sessionService.InvalidateUserSession();
+            }
+            catch(ArgumentNullException)
+            {
+                return this.BadRequest();
+            }
+            catch(ObjectNotFoundException)
+            {
+                return this.NotFound();
+            }
 
-            return this.Ok();
+            return this.StatusCode(HttpStatusCode.NoContent);
         }
     }
 }

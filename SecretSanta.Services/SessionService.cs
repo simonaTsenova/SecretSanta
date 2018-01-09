@@ -3,6 +3,7 @@ using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
 using System;
+using System.Data.Entity.Core;
 using System.Linq;
 using System.Net.Http;
 using System.Web;
@@ -78,7 +79,7 @@ namespace SecretSanta.Services
 
             if(currentUserSession == null)
             {
-                throw new ArgumentNullException();
+                throw new ObjectNotFoundException();
             }
 
             this.userSessionRepository.Delete(currentUserSession);
