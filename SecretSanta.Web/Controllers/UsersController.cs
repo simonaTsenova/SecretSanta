@@ -104,9 +104,31 @@ namespace SecretSanta.Web.Controllers
             var usersModel = this.userService
                 .GetAllUsers(formatModel.Skip, formatModel.Take, formatModel.Order, formatModel.Search)
                 .Select(user => this.viewModelsFactory
-                    .Create(user.Email, user.FirstName, user.LastName, user.DisplayName, user.UserName));
+                    .CreateDisplayUserViewModel(user.Email, user.FirstName, user.LastName, user.DisplayName, user.UserName));
 
             return this.Ok(usersModel);
+        }
+
+        // GET ~/users/{username}
+        [HttpGet]
+        [Route("{username}")]
+        public IHttpActionResult GetUser(string username)
+        {
+            if(string.IsNullOrEmpty(username))
+            {
+                return this.BadRequest("Username must be provided");
+            }
+
+            var user = this.userService.GetUserByUserName(username);
+            if(user == null)
+            {
+                return this.NotFound();
+            }
+
+            var userModel = this.viewModelsFactory
+                .CreateDisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
+
+            return this.Ok(userModel);
         }
     }
 }
