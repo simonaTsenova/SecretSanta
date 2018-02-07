@@ -10,13 +10,11 @@ namespace SecretSanta.Web
     public partial class Startup
     {
         public const string TokenEndpointPath = "/token";
-        public static string PublicClientId { get; private set; }
+        public static string PublicClientId = "self";
         public static OAuthAuthorizationServerOptions OAuthOptions { get; private set; }
 
         static Startup()
         {
-            PublicClientId = "self";
-
             OAuthOptions = new OAuthAuthorizationServerOptions
             {
                 TokenEndpointPath = new PathString(TokenEndpointPath),

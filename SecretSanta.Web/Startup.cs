@@ -8,6 +8,7 @@ using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
 using SecretSanta.Services;
 using SecretSanta.Services.Contracts;
+using SecretSanta.Web.Infrastructure;
 using System.Reflection;
 using System.Web.Http;
 
@@ -26,6 +27,8 @@ namespace SecretSanta.Web
 
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserSessionFactory>(builder).ReturningConcreteType();
+
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<IViewModelsFactory>(builder).ReturningConcreteType();
 
             builder.RegisterType<UserService>().As<IUserService>().InstancePerRequest();
             builder.RegisterType<SessionService>().As<ISessionService>().InstancePerRequest();

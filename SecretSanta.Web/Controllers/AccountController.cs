@@ -72,20 +72,28 @@ namespace SecretSanta.Web.Controllers
                     jsSerializer.Deserialize<Dictionary<string, string>>(responseString);
                 var authToken = responseDeserialized["access_token"];
                 var userName = responseDeserialized["userName"];
+                var expirationDate = responseDeserialized[".expires"];
 
-                this.sessionService.CreateUserSession(userName, authToken);
+                try
+                {
+                    this.sessionService.CreateUserSession(userName, authToken);
+                }
+                catch (ObjectNotFoundException)
+                {
+                    return this.NotFound();
+                }
 
                 // Cleanup: delete expired sessions from the database
                 this.sessionService.DeleteExpiredSessions();
 
-                return this.Content(HttpStatusCode.Created, responseString);
+                return this.Content(HttpStatusCode.Created, new { access_token = authToken, expiration_date = expirationDate });
             }
 
             return this.ResponseMessage(response);
         }
 
-        // POST ~/logins/{username}
-        [HttpPost]
+        // DELETE ~/logins/{username}
+        [HttpDelete]
         [Route("")]
         public IHttpActionResult LogoutUser()
         {
@@ -101,7 +109,7 @@ namespace SecretSanta.Web.Controllers
             }
             catch(ObjectNotFoundException)
             {
-                return this.NotFound();
+                return this.Content(HttpStatusCode.NotFound, "User has already logged out or their session has already expired");
             }
 
             return this.StatusCode(HttpStatusCode.NoContent);

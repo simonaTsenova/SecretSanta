@@ -41,7 +41,7 @@ namespace SecretSanta.Services
             var user = this.userService.GetUserByUserName(userName);
             if(user == null)
             {
-                throw new ArgumentNullException();
+                throw new ObjectNotFoundException();
             }
 
             var sessionTimeout = new TimeSpan(0, 2, 0);
@@ -60,9 +60,9 @@ namespace SecretSanta.Services
             foreach (var session in expiredSessions)
             {
                 this.userSessionRepository.Delete(session);
-                this.unitOfWork.Commit();
             }
 
+            this.unitOfWork.Commit();
         }
 
         public void InvalidateUserSession()
