@@ -19,6 +19,12 @@ namespace SecretSanta.Data
             return new SecretSantaDbContext();
         }
 
+        public DbSet<Group> Groups { get; set; }
+
+        public DbSet<Invitation> Invitations { get; set; }
+
+        public DbSet<Link> Links { get; set; }
+
         public DbSet<UserSession> UserSessions { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
@@ -27,6 +33,9 @@ namespace SecretSanta.Data
 
             modelBuilder.Configurations.Add(new UserEntityConfiguration());
             modelBuilder.Configurations.Add(new UserSessionEntityConfiguration());
+            modelBuilder.Configurations.Add(new GroupEntityConfiguration());
+            modelBuilder.Configurations.Add(new InvitationEntityConfiguration());
+            modelBuilder.Configurations.Add(new LinkEntityConfiguration());
         }
 
         public void Add<TEntry>(TEntry entity) where TEntry : class

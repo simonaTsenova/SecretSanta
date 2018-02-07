@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ namespace SecretSanta.Models
     {
         public User()
         {
+            this.Invitations = new HashSet<Invitation>();
+            this.Groups = new HashSet<Group>();
         }
 
         public User(string email, string username, string displayName,
@@ -28,6 +31,10 @@ namespace SecretSanta.Models
 
         [MinLength(6)]
         public string DisplayName { get; set; }
+
+        public virtual ICollection<Invitation> Invitations { get; set; }
+
+        public virtual ICollection<Group> Groups { get; set; }
 
         public async Task<ClaimsIdentity> GenerateUserIdentityAsync(UserManager<User> manager,
             string authenticationType)

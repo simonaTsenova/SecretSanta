@@ -28,6 +28,9 @@ namespace SecretSanta.Data.Configurations
 
             this.Property(user => user.LastName)
                 .HasMaxLength(20);
+
+            this.HasMany<Group>(u => u.Groups)
+                .WithMany(g => g.Users);
         }
     }
 }

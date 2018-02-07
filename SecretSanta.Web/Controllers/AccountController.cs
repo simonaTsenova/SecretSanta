@@ -86,7 +86,7 @@ namespace SecretSanta.Web.Controllers
                 // Cleanup: delete expired sessions from the database
                 this.sessionService.DeleteExpiredSessions();
 
-                return this.Content(HttpStatusCode.Created, new { access_token = authToken, expiration_date = expirationDate });
+                return this.Content(HttpStatusCode.Created, new { access_token = authToken });
             }
 
             return this.ResponseMessage(response);
