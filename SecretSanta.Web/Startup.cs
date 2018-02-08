@@ -9,7 +9,6 @@ using SecretSanta.Factories;
 using SecretSanta.Services;
 using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Controllers;
-using SecretSanta.Web.Infrastructure;
 using SecretSanta.Web.Infrastructure.Factories;
 using SecretSanta.Web.Infrastructure.Filters;
 using System.Reflection;

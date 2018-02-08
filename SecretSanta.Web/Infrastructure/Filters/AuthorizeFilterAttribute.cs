@@ -9,6 +9,7 @@ using System.Web.Http;
 using System.Net;
 using System;
 using System.Net.Http;
+using System.Linq;
 
 namespace SecretSanta.Web.Infrastructure.Filters
 {
@@ -23,6 +24,11 @@ namespace SecretSanta.Web.Infrastructure.Filters
 
         public override async Task OnActionExecutingAsync(HttpActionContext actionContext, CancellationToken cancellationToken)
         {
+            if(actionContext.ActionDescriptor.GetCustomAttributes<AllowAnonymousAttribute>().Any())
+            {
+                return;
+            }
+
             IEnumerable<string> authValues;
             if (!actionContext.Request.Headers.TryGetValues("Authorization", out authValues))
             {

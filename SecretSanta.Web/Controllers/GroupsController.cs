@@ -1,11 +1,7 @@
 ﻿using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Models.Groups;
-using System.Threading.Tasks;
 using System.Web.Http;
-using Microsoft.AspNet.Identity;
 using System.Net;
-using System.Web;
-using SecretSanta.Web.Infrastructure;
 using System.Linq;
 using SecretSanta.Web.Infrastructure.Factories;
 
