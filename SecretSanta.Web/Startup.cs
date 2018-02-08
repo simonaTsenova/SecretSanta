@@ -8,7 +8,10 @@ using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
 using SecretSanta.Services;
 using SecretSanta.Services.Contracts;
+using SecretSanta.Web.Controllers;
 using SecretSanta.Web.Infrastructure;
+using SecretSanta.Web.Infrastructure.Factories;
+using SecretSanta.Web.Infrastructure.Filters;
 using System.Reflection;
 using System.Web.Http;
 
@@ -22,15 +25,21 @@ namespace SecretSanta.Web
         {
             var builder = new ContainerBuilder();
 
+            builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<UsersController>().InstancePerRequest();
+            builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<GroupsController>().InstancePerRequest();
+
             // Register your Web API controllers.
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<IGroupFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserSessionFactory>(builder).ReturningConcreteType();
 
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IViewModelsFactory>(builder).ReturningConcreteType();
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<IDisplayUserViewModelFactory>(builder).ReturningConcreteType();
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<IDisplayGroupViewModelFactory>(builder).ReturningConcreteType();
 
             builder.RegisterType<UserService>().As<IUserService>().InstancePerRequest();
+            builder.RegisterType<GroupService>().As<IGroupService>().InstancePerRequest();
             builder.RegisterType<SessionService>().As<ISessionService>().InstancePerRequest();
 
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerRequest();
@@ -39,6 +48,7 @@ namespace SecretSanta.Web
 
             // Get your HttpConfiguration.
             var config = GlobalConfiguration.Configuration;
+            builder.RegisterWebApiFilterProvider(config);
 
             // Set the dependency resolver to be Autofac.
             var container = builder.Build();

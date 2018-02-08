@@ -14,6 +14,13 @@ namespace SecretSanta.Models
             this.Users = new HashSet<User>();
         }
 
+        public Group(string name, string adminId)
+            : base()
+        {
+            this.Name = name;
+            this.AdminId = adminId;
+        }
+
         public Guid Id { get; set; }
 
         public string Name { get; set; }

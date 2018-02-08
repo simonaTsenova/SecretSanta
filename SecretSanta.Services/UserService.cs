@@ -53,5 +53,14 @@ namespace SecretSanta.Services
 
             return user;
         }
+
+        public User GetUserById(string id)
+        {
+            var user = this.userRepository.All
+                .Where(u => u.Id == id)
+                .FirstOrDefault();
+
+            return user;
+        }
     }
 }

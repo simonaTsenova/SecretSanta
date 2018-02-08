@@ -8,10 +8,8 @@ using System.Net;
 using System.Web.Http.ModelBinding;
 using SecretSanta.Web.Models;
 using SecretSanta.Services.Contracts;
-using SecretSanta.Models;
-using System.Collections.Generic;
 using System.Linq;
-using SecretSanta.Web.Infrastructure;
+using SecretSanta.Web.Infrastructure.Factories;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -21,9 +19,9 @@ namespace SecretSanta.Web.Controllers
         private ApplicationUserManager applicationUserManager;
         private readonly IUserService userService;
         private readonly IUserFactory userFactory;
-        private readonly IViewModelsFactory viewModelsFactory;
+        private readonly IDisplayUserViewModelFactory viewModelsFactory;
 
-        public UsersController(IUserService userService, IUserFactory userFactory, IViewModelsFactory viewModelsFactory)
+        public UsersController(IUserService userService, IUserFactory userFactory, IDisplayUserViewModelFactory viewModelsFactory)
         {
             this.userService = userService;
             this.userFactory = userFactory;
@@ -55,7 +53,7 @@ namespace SecretSanta.Web.Controllers
         {
             if(model == null)
             {
-                return this.BadRequest("Invalid user data");
+                return this.BadRequest("User credentials must be provided");
             }
 
             if (!ModelState.IsValid)

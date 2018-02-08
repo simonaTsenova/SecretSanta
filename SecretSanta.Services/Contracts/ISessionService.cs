@@ -1,4 +1,6 @@
-﻿namespace SecretSanta.Services.Contracts
+﻿using SecretSanta.Models;
+
+namespace SecretSanta.Services.Contracts
 {
     public interface ISessionService
     {
@@ -7,5 +9,9 @@
         void DeleteExpiredSessions();
 
         void InvalidateUserSession();
+
+        UserSession GetCurrentSession();
+
+        User GetCurrentUser();
     }
 }

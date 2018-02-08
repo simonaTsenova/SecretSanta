@@ -1,4 +1,5 @@
-﻿using SecretSanta.Data.Contracts;
+﻿using Microsoft.AspNet.Identity;
+using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
@@ -39,12 +40,12 @@ namespace SecretSanta.Services
         public void CreateUserSession(string userName, string authtoken)
         {
             var user = this.userService.GetUserByUserName(userName);
-            if(user == null)
+            if (user == null)
             {
                 throw new ObjectNotFoundException();
             }
 
-            var sessionTimeout = new TimeSpan(0, 2, 0);
+            var sessionTimeout = new TimeSpan(0, 10, 0);
             var expirationDateTime = DateTime.Now + sessionTimeout;
             var userSession = this.userSessionFactory.Create(user.Id, authtoken, expirationDateTime);
 
@@ -68,7 +69,7 @@ namespace SecretSanta.Services
         public void InvalidateUserSession()
         {
             string authToken = this.GetCurrentBearerAuthrorizationToken();
-            if(authToken == null)
+            if (authToken == null)
             {
                 throw new ArgumentNullException();
             }
@@ -77,13 +78,33 @@ namespace SecretSanta.Services
                 .Where(s => s.Authtoken == authToken)
                 .FirstOrDefault();
 
-            if(currentUserSession == null)
+            if (currentUserSession == null)
             {
                 throw new ObjectNotFoundException();
             }
 
             this.userSessionRepository.Delete(currentUserSession);
             this.unitOfWork.Commit();
+        }
+
+        public UserSession GetCurrentSession()
+        {
+            var authToken = this.GetCurrentBearerAuthrorizationToken();
+            var currentUserId = HttpContext.Current.User.Identity.GetUserId();
+
+            var userSession = this.userSessionRepository.All
+                .Where(s => s.Authtoken == authToken && s.UserId == currentUserId)
+                .FirstOrDefault();
+
+            return userSession;
+        }
+
+        public User GetCurrentUser()
+        {
+            var id = HttpContext.Current.User.Identity.GetUserId();
+            var user = this.userService.GetUserById(id);
+
+            return user;
         }
 
         private string GetCurrentBearerAuthrorizationToken()

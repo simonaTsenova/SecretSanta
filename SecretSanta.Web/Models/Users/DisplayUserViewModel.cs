@@ -2,6 +2,10 @@
 {
     public class DisplayUserViewModel
     {
+        public DisplayUserViewModel()
+        {
+        }
+
         public DisplayUserViewModel(string email, string firstName, string lastName, string displayName, string userName)
         {
             this.Email = email;

@@ -8,6 +8,8 @@ namespace SecretSanta.Services.Contracts
     {
         User GetUserByUserName(string userName);
 
+        User GetUserById(string id);
+
         IEnumerable<User> GetAllUsers(int skip, int take, OrderType order, string searchPhrase);
     }
 }
