@@ -3,6 +3,7 @@ using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 
 namespace SecretSanta.Services
@@ -41,6 +42,16 @@ namespace SecretSanta.Services
 
             this.groupRepository.Add(group);
             this.unitOfWork.Commit();
+
+            return group;
+        }
+
+        public Group GetGroupByName(string name)
+        {
+            var group = this.groupRepository.All
+                .Where(g => g.Name == name)
+                .Include(g => g.Admin)
+                .FirstOrDefault();
 
             return group;
         }

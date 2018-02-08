@@ -1,10 +1,20 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace SecretSanta.Models
 {
     public class Invitation
     {
+        public Invitation()
+        {
+        }
+
+        public Invitation(Guid groupId, DateTime sentDate, string receiverId)
+        {
+            this.GroupId = groupId;
+            this.SentDate = sentDate;
+            this.ReceiverId = receiverId;
+        }
+
         public Guid Id { get; set; }
 
         public DateTime SentDate { get; set; }

@@ -32,14 +32,17 @@ namespace SecretSanta.Web
 
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IGroupFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserFactory>(builder).ReturningConcreteType();
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<IInvitationFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserSessionFactory>(builder).ReturningConcreteType();
 
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IDisplayUserViewModelFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IDisplayGroupViewModelFactory>(builder).ReturningConcreteType();
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<IInvitationViewModelFactory>(builder).ReturningConcreteType();
 
             builder.RegisterType<UserService>().As<IUserService>().InstancePerRequest();
             builder.RegisterType<GroupService>().As<IGroupService>().InstancePerRequest();
             builder.RegisterType<SessionService>().As<ISessionService>().InstancePerRequest();
+            builder.RegisterType<InvitationService>().As<IInvitationService>().InstancePerRequest();
 
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerRequest();
             builder.RegisterType<SecretSantaDbContext>().As<ISecretSantaDbContext>().InstancePerRequest();
