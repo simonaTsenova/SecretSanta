@@ -4,6 +4,7 @@ using SecretSanta.Models.Enumerations;
 using SecretSanta.Services.Contracts;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 
 namespace SecretSanta.Services
@@ -35,7 +36,7 @@ namespace SecretSanta.Services
                 users = users.OrderBy(u => u.DisplayName);
             }
 
-            if(take == 0)
+            if(skip == 0 && take == 0)
             {
                 take = users.Count();
             }
@@ -58,9 +59,34 @@ namespace SecretSanta.Services
         {
             var user = this.userRepository.All
                 .Where(u => u.Id == id)
+                .Include(u => u.Invitations)
+                .Include(u => u.Groups)
                 .FirstOrDefault();
 
             return user;
+        }
+
+        public IEnumerable<Invitation> GetUserInvitations(User user, int skip, int take, OrderType order)
+        {
+            var invitations = user.Invitations.AsQueryable();
+
+            if(order == OrderType.Descending)
+            {
+                invitations = invitations.OrderByDescending(i => i.SentDate);
+            }
+            else
+            {
+                invitations = invitations.OrderBy(i => i.SentDate);
+            }
+
+            if(skip == 0 && take == 0)
+            {
+                take = invitations.Count();
+            }
+
+            invitations = invitations.Skip(skip).Take(take);
+
+            return invitations;
         }
     }
 }

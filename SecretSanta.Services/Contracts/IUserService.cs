@@ -11,5 +11,7 @@ namespace SecretSanta.Services.Contracts
         User GetUserById(string id);
 
         IEnumerable<User> GetAllUsers(int skip, int take, OrderType order, string searchPhrase);
+
+        IEnumerable<Invitation> GetUserInvitations(User user, int skip, int take, OrderType order);
     }
 }

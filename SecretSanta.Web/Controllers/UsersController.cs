@@ -11,6 +11,7 @@ using SecretSanta.Services.Contracts;
 using System.Linq;
 using SecretSanta.Web.Infrastructure.Factories;
 using SecretSanta.Web.Models.Invitations;
+using System.Collections.Generic;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -142,6 +143,7 @@ namespace SecretSanta.Web.Controllers
         }
 
         // POST ~/usrs/{username}/invitations
+        [HttpPost]
         [Route("{username}/invitations")]
         public IHttpActionResult SendInvitation([FromUri] string username, InvitationViewModel model)
         {
@@ -174,6 +176,30 @@ namespace SecretSanta.Web.Controllers
             var invitationModel = this.invitationViewModelFactory.Create(invitationId, model.SentDate, group.Name, receiver.UserName);
 
             return this.Content(HttpStatusCode.Created, invitationModel);
+        }
+
+        // GET ~/users/{username}/invitations?skip={s}&take={t}&order={A|D}
+        [HttpGet]
+        [Route("{username}/invitations")]
+        public IHttpActionResult GetUserInvitations(string username, [FromUri]ResultFormatViewModel model)
+        {
+            if(string.IsNullOrEmpty(username) || model == null)
+            {
+                return this.BadRequest();
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if(currentUser.UserName != username)
+            {
+                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to access their invitations.");
+            }
+
+            var invitations = this.userService.GetUserInvitations(currentUser, model.Skip, model.Take, model.Order);
+
+            var invitationsModel = invitations
+                .Select(i => this.invitationViewModelFactory.Create(i.Id, i.SentDate, i.Group.Name, i.Receiver.UserName));
+
+            return this.Ok(invitationsModel);
         }
     }
 }

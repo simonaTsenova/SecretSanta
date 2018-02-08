@@ -26,6 +26,9 @@ namespace SecretSanta.Web
 
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<UsersController>().InstancePerRequest();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<GroupsController>().InstancePerRequest();
+            builder.RegisterType<AuthorizeFilterAttribute>()
+                .AsWebApiActionFilterFor<AccountController>(controller => controller.LogoutUser())
+                .InstancePerRequest();
 
             // Register your Web API controllers.
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
