@@ -12,15 +12,21 @@ namespace SecretSanta.Web.Controllers
     {
         private readonly IGroupService groupService;
         private readonly ISessionService sessionService;
+        private readonly IUserService userService;
         private readonly IInvitationService invitationService;
         private readonly IDisplayGroupViewModelFactory viewModelsFactory;
         private readonly IDisplayUserViewModelFactory userViewModelFactory;
 
-        public GroupsController(IGroupService groupService, ISessionService sessionService, IInvitationService invitationService,
-            IDisplayGroupViewModelFactory viewModelsFactory, IDisplayUserViewModelFactory userViewModelFactory)
+        public GroupsController(IGroupService groupService, 
+            ISessionService sessionService, 
+            IUserService userService, 
+            IInvitationService invitationService,
+            IDisplayGroupViewModelFactory viewModelsFactory, 
+            IDisplayUserViewModelFactory userViewModelFactory)
         {
             this.groupService = groupService;
             this.sessionService = sessionService;
+            this.userService = userService;
             this.invitationService = invitationService;
             this.viewModelsFactory = viewModelsFactory;
             this.userViewModelFactory = userViewModelFactory;
@@ -80,6 +86,72 @@ namespace SecretSanta.Web.Controllers
             this.invitationService.DeleteInvitation(invitation);
 
             return this.Ok();
+        }
+
+        // GET ~/groups/{groupname}/participants
+        [HttpGet]
+        [Route("{groupname}/participants")]
+        public IHttpActionResult GetGroupParticipants(string groupname)
+        {
+            if (groupname == null)
+            {
+                return this.BadRequest();
+            }
+
+            var group = this.groupService.GetGroupByName(groupname);
+            if(group == null)
+            {
+                return this.Content(HttpStatusCode.NotFound, "Group with this name does not exist.");
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if(group.Admin.UserName != currentUser.UserName)
+            {
+                return this.Content(HttpStatusCode.Forbidden, "This user is not admin of the group.");
+            }
+
+            var participants = group.Users;
+            var modelParticipants = participants.Select(p => this.userViewModelFactory
+                .CreateDisplayUserViewModel(p.Email, p.FirstName, p.LastName, p.DisplayName, p.UserName));
+
+            return this.Content(HttpStatusCode.OK, modelParticipants);
+        }
+
+        // DELETE ~/groups/{groupName}/participants/{participantUsername}
+        [HttpDelete]
+        [Route("{groupname}/participants/{participantUsername}")]
+        public IHttpActionResult RemoveGroupParticipant(string groupname, string participantUsername)
+        {
+            if(string.IsNullOrEmpty(groupname) || string.IsNullOrEmpty(participantUsername))
+            {
+                return this.BadRequest();
+            }
+
+            var participant = this.userService.GetUserByUserName(participantUsername);
+            if(participant == null)
+            {
+                return this.Content(HttpStatusCode.NotFound, "Participant does not exist.");
+            }
+
+            var group = this.groupService.GetGroupByName(groupname);
+            if(group == null)
+            {
+                return this.Content(HttpStatusCode.NotFound, "Group with this name does not exist.");
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if(currentUser.UserName != group.Admin.UserName)
+            {
+                return this.Content(HttpStatusCode.Forbidden, "Only administrators are allowed to remove participants from group.");
+            }
+
+            var isSuccess = this.groupService.RemoveParticipant(group, participant);
+            if(!isSuccess)
+            {
+                return this.Content(HttpStatusCode.NotFound, "Participant does not exist in this group.");
+            }
+
+            return this.StatusCode(HttpStatusCode.NoContent);
         }
     }
 }

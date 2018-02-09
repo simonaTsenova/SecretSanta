@@ -88,5 +88,18 @@ namespace SecretSanta.Services
 
             return invitations;
         }
+
+        public IEnumerable<Group> GetUserGroups(User user, int skip, int take)
+        {
+            var groups = user.Groups;
+            if (skip == 0 && take == 0)
+            {
+                take = groups.Count();
+            }
+
+            groups = groups.OrderBy(g => g.Name).Skip(skip).Take(take).ToList();
+
+            return groups;
+        }
     }
 }

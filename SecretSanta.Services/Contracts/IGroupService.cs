@@ -9,5 +9,7 @@ namespace SecretSanta.Services.Contracts
         Group GetGroupByName(string name);
 
         void AddParticipant(Group group, User user);
+
+        bool RemoveParticipant(Group group, User user);
     }
 }

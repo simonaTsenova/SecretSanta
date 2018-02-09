@@ -46,6 +46,7 @@ namespace SecretSanta.Web
             builder.RegisterType<GroupService>().As<IGroupService>().InstancePerRequest();
             builder.RegisterType<SessionService>().As<ISessionService>().InstancePerRequest();
             builder.RegisterType<InvitationService>().As<IInvitationService>().InstancePerRequest();
+            builder.RegisterType<LinkService>().As<ILinkService>().InstancePerRequest();
 
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerRequest();
             builder.RegisterType<SecretSantaDbContext>().As<ISecretSantaDbContext>().InstancePerRequest();

@@ -11,8 +11,7 @@ using SecretSanta.Services.Contracts;
 using System.Linq;
 using SecretSanta.Web.Infrastructure.Factories;
 using SecretSanta.Web.Models.Invitations;
-using System.Collections.Generic;
-using System;
+using SecretSanta.Web.Models.Groups;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -24,12 +23,13 @@ namespace SecretSanta.Web.Controllers
         private readonly IGroupService groupService;
         private readonly ISessionService sessionService;
         private readonly IInvitationService invitationService;
+        private readonly ILinkService linkService;
         private readonly IUserFactory userFactory;
         private readonly IDisplayUserViewModelFactory viewModelsFactory;
         private readonly IInvitationViewModelFactory invitationViewModelFactory;
 
         public UsersController(IUserService userService, IGroupService groupService,
-            ISessionService sessionService, IInvitationService invitationService,
+            ISessionService sessionService, IInvitationService invitationService, ILinkService linkService,
             IUserFactory userFactory, IDisplayUserViewModelFactory viewModelsFactory,
             IInvitationViewModelFactory invitationViewModelFactory)
         {
@@ -37,6 +37,7 @@ namespace SecretSanta.Web.Controllers
             this.groupService = groupService;
             this.sessionService = sessionService;
             this.invitationService = invitationService;
+            this.linkService = linkService;
             this.userFactory = userFactory;
             this.viewModelsFactory = viewModelsFactory;
             this.invitationViewModelFactory = invitationViewModelFactory;
@@ -214,13 +215,13 @@ namespace SecretSanta.Web.Controllers
             }
 
             var currentUser = this.sessionService.GetCurrentUser();
-            if(currentUser.UserName != username)
+            if (currentUser.UserName != username)
             {
                 return this.StatusCode(HttpStatusCode.Forbidden);
             }
 
             var invitation = this.invitationService.GetById(id);
-            if(invitation == null || invitation.ReceiverId != currentUser.Id)
+            if (invitation == null || invitation.ReceiverId != currentUser.Id)
             {
                 return this.Content(HttpStatusCode.Conflict, "Invitation does not exist.");
             }
@@ -228,6 +229,61 @@ namespace SecretSanta.Web.Controllers
             this.invitationService.DeleteInvitation(invitation);
 
             return this.StatusCode(HttpStatusCode.NoContent);
+        }
+
+        // GET ~/users/{username}/groups?skip={s}&take={t}
+        [HttpGet]
+        [Route("{username}/groups")]
+        public IHttpActionResult GetUserGroups(string username, [FromUri]PagingViewModel model)
+        {
+            if (string.IsNullOrEmpty(username) || model == null)
+            {
+                return this.BadRequest();
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if (currentUser.UserName != username)
+            {
+                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to see their groups.");
+            }
+
+            var groups = this.userService.GetUserGroups(currentUser, model.Skip, model.Take);
+            var modelGroups = groups.Select(g => new ShortGroupViewModel(g.Name, g.Admin.UserName));
+
+            return this.Ok(modelGroups);
+        }
+
+        // GET ~users/{username}/groups/{groupname}/links
+        [HttpGet]
+        [Route("{username}/groups/{groupname}/links")]
+        public IHttpActionResult GetUserGroupConnection(string username, string groupname)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(groupname))
+            {
+                return this.BadRequest();
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if (currentUser.UserName != username)
+            {
+                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to see their links.");
+            }
+
+            var group = this.groupService.GetGroupByName(groupname);
+            if (group == null)
+            {
+                return this.Content(HttpStatusCode.NotFound, "Group with this name does not exist.");
+            }
+
+            if (!group.hasLinkingProcessStarted)
+            {
+                return this.Content(HttpStatusCode.NotFound, "Linking process has not started yet.");
+            }
+
+            var connection = this.linkService.GetByGroupAndSender(groupname, username);
+            var model = new { receiver = connection.Receiver.UserName };
+
+            return this.Ok(model);
         }
     }
 }

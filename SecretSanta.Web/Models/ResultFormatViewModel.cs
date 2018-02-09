@@ -2,12 +2,8 @@
 
 namespace SecretSanta.Web.Models
 {
-    public class ResultFormatViewModel
+    public class ResultFormatViewModel : PagingViewModel
     {
-        public int Skip { get; set; }
-        
-        public int Take { get; set; }
-
         public OrderType Order { get; set; }
 
         public string Search { get; set; }

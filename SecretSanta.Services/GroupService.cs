@@ -28,6 +28,20 @@ namespace SecretSanta.Services
             this.unitOfWork.Commit();
         }
 
+        public bool RemoveParticipant(Group group, User user)
+        {
+            var isParticipant = group.Users.Contains(user);
+            if(!isParticipant)
+            {
+                return false;
+            }
+
+            group.Users.Remove(user);
+            this.unitOfWork.Commit();
+
+            return true;
+        }
+
         public Group CreateGroup(string name, User admin)
         {
             var group = this.groupFactory.Create(name, admin);
@@ -47,6 +61,7 @@ namespace SecretSanta.Services
             var group = this.groupRepository.All
                 .Where(g => g.Name == name)
                 .Include(g => g.Admin)
+                .Include(g => g.Users)
                 .FirstOrDefault();
 
             return group;
