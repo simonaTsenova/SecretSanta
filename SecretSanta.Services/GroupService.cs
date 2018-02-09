@@ -13,7 +13,6 @@ namespace SecretSanta.Services
         private readonly IGroupFactory groupFactory;
         private readonly IEfRepository<Group> groupRepository;
         private readonly IUnitOfWork unitOfWork;
-        private readonly IUserService userService;
 
         public GroupService(IGroupFactory groupFactory, IEfRepository<Group> groupRepository, 
             IUnitOfWork unitOfWork, IUserService userService)
@@ -21,23 +20,20 @@ namespace SecretSanta.Services
             this.groupFactory = groupFactory;
             this.groupRepository = groupRepository;
             this.unitOfWork = unitOfWork;
-            this.userService = userService;
         }
 
-        public Group CreateGroup(string name, string adminId)
+        public void AddParticipant(Group group, User user)
         {
-            var foundGroup = this.groupRepository.All
-                .Where(g => g.Name == name)
-                .FirstOrDefault();
-            if (foundGroup != null)
-            {
-                return null;
-            }
+            group.Users.Add(user);
+            this.unitOfWork.Commit();
+        }
 
-            var group = this.groupFactory.Create(name, adminId);
+        public Group CreateGroup(string name, User admin)
+        {
+            var group = this.groupFactory.Create(name, admin);
             group.Users = new HashSet<User>()
             {
-                this.userService.GetUserById(adminId)
+                admin
             };
 
             this.groupRepository.Add(group);

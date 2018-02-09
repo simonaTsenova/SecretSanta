@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecretSanta.Models
 {
@@ -14,11 +10,11 @@ namespace SecretSanta.Models
             this.Users = new HashSet<User>();
         }
 
-        public Group(string name, string adminId)
+        public Group(string name, User admin)
             : base()
         {
             this.Name = name;
-            this.AdminId = adminId;
+            this.Admin = admin;
         }
 
         public Guid Id { get; set; }

@@ -12,6 +12,7 @@ using System.Linq;
 using SecretSanta.Web.Infrastructure.Factories;
 using SecretSanta.Web.Models.Invitations;
 using System.Collections.Generic;
+using System;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -27,7 +28,7 @@ namespace SecretSanta.Web.Controllers
         private readonly IDisplayUserViewModelFactory viewModelsFactory;
         private readonly IInvitationViewModelFactory invitationViewModelFactory;
 
-        public UsersController(IUserService userService, IGroupService groupService, 
+        public UsersController(IUserService userService, IGroupService groupService,
             ISessionService sessionService, IInvitationService invitationService,
             IUserFactory userFactory, IDisplayUserViewModelFactory viewModelsFactory,
             IInvitationViewModelFactory invitationViewModelFactory)
@@ -160,13 +161,13 @@ namespace SecretSanta.Web.Controllers
             }
 
             var currentUser = this.sessionService.GetCurrentUser();
-            if(currentUser.UserName != group.Admin.UserName)
+            if (currentUser.UserName != group.Admin.UserName)
             {
                 return this.Content(HttpStatusCode.Forbidden, "Only admins can send invitations for groups.");
             }
 
             var existingInvitation = this.invitationService.GetByGroupAndUser(model.GroupName, username);
-            if(existingInvitation != null)
+            if (existingInvitation != null)
             {
                 return this.Content(HttpStatusCode.Conflict, "This user already has an invitation for this group.");
             }
@@ -183,13 +184,13 @@ namespace SecretSanta.Web.Controllers
         [Route("{username}/invitations")]
         public IHttpActionResult GetUserInvitations(string username, [FromUri]ResultFormatViewModel model)
         {
-            if(string.IsNullOrEmpty(username) || model == null)
+            if (string.IsNullOrEmpty(username) || model == null)
             {
                 return this.BadRequest();
             }
 
             var currentUser = this.sessionService.GetCurrentUser();
-            if(currentUser.UserName != username)
+            if (currentUser.UserName != username)
             {
                 return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to access their invitations.");
             }
@@ -200,6 +201,33 @@ namespace SecretSanta.Web.Controllers
                 .Select(i => this.invitationViewModelFactory.Create(i.Id, i.SentDate, i.Group.Name, i.Receiver.UserName));
 
             return this.Ok(invitationsModel);
+        }
+
+        // DELETE ~/users/{username}/invitations/{id}
+        [HttpDelete]
+        [Route("{username}/invitations/{id}")]
+        public IHttpActionResult DeleteInvitation(string username, string id)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(id))
+            {
+                return this.BadRequest();
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if(currentUser.UserName != username)
+            {
+                return this.StatusCode(HttpStatusCode.Forbidden);
+            }
+
+            var invitation = this.invitationService.GetById(id);
+            if(invitation == null || invitation.ReceiverId != currentUser.Id)
+            {
+                return this.Content(HttpStatusCode.Conflict, "Invitation does not exist.");
+            }
+
+            this.invitationService.DeleteInvitation(invitation);
+
+            return this.StatusCode(HttpStatusCode.NoContent);
         }
     }
 }

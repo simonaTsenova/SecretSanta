@@ -4,8 +4,10 @@ namespace SecretSanta.Services.Contracts
 {
     public interface IGroupService
     {
-        Group CreateGroup(string name, string adminId);
+        Group CreateGroup(string name, User admin);
 
         Group GetGroupByName(string name);
+
+        void AddParticipant(Group group, User user);
     }
 }

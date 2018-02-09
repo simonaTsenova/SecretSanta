@@ -21,6 +21,15 @@ namespace SecretSanta.Services
             this.unitOfWork = unitOfWork;
         }
 
+        public Invitation GetById(string id)
+        {
+            var invitation = this.invitationRepository.All
+                .Where(i => i.Id.ToString() == id)
+                .FirstOrDefault();
+
+            return invitation;
+        }
+
         public Invitation GetByGroupAndUser(string group, string user)
         {
             var invitation = this.invitationRepository.All
@@ -35,6 +44,12 @@ namespace SecretSanta.Services
             var invitation = this.invitationFactory.Create(groupId, sentDate, receiverId);
 
             this.invitationRepository.Add(invitation);
+            this.unitOfWork.Commit();
+        }
+
+        public void DeleteInvitation(Invitation invitation)
+        {
+            this.invitationRepository.Delete(invitation);
             this.unitOfWork.Commit();
         }
     }
