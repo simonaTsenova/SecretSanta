@@ -25,13 +25,10 @@ namespace SecretSanta.Web.Controllers
         private readonly IInvitationService invitationService;
         private readonly ILinkService linkService;
         private readonly IUserFactory userFactory;
-        private readonly IDisplayUserViewModelFactory viewModelsFactory;
-        private readonly IInvitationViewModelFactory invitationViewModelFactory;
 
         public UsersController(IUserService userService, IGroupService groupService,
             ISessionService sessionService, IInvitationService invitationService, ILinkService linkService,
-            IUserFactory userFactory, IDisplayUserViewModelFactory viewModelsFactory,
-            IInvitationViewModelFactory invitationViewModelFactory)
+            IUserFactory userFactory)
         {
             this.userService = userService;
             this.groupService = groupService;
@@ -39,8 +36,6 @@ namespace SecretSanta.Web.Controllers
             this.invitationService = invitationService;
             this.linkService = linkService;
             this.userFactory = userFactory;
-            this.viewModelsFactory = viewModelsFactory;
-            this.invitationViewModelFactory = invitationViewModelFactory;
         }
 
         public ApplicationUserManager UserManager
@@ -116,8 +111,7 @@ namespace SecretSanta.Web.Controllers
 
             var usersModel = this.userService
                 .GetAllUsers(formatModel.Skip, formatModel.Take, formatModel.Order, formatModel.Search)
-                .Select(user => this.viewModelsFactory
-                    .CreateDisplayUserViewModel(user.Email, user.FirstName, user.LastName, user.DisplayName, user.UserName));
+                .Select(user => new DisplayUserViewModel(user.Email, user.FirstName, user.LastName, user.DisplayName, user.UserName));
 
             return this.Ok(usersModel);
         }
@@ -138,8 +132,7 @@ namespace SecretSanta.Web.Controllers
                 return this.NotFound();
             }
 
-            var userModel = this.viewModelsFactory
-                .CreateDisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
+            var userModel = new DisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
 
             return this.Ok(userModel);
         }
@@ -175,7 +168,7 @@ namespace SecretSanta.Web.Controllers
 
             this.invitationService.CreateInvitation(group.Id, model.SentDate, receiver.Id);
             var invitationId = this.invitationService.GetByGroupAndUser(group.Name, receiver.UserName).Id;
-            var invitationModel = this.invitationViewModelFactory.Create(invitationId, model.SentDate, group.Name, receiver.UserName);
+            var invitationModel = new InvitationViewModel(invitationId, model.SentDate, group.Name, receiver.UserName);
 
             return this.Content(HttpStatusCode.Created, invitationModel);
         }
@@ -199,7 +192,7 @@ namespace SecretSanta.Web.Controllers
             var invitations = this.userService.GetUserInvitations(currentUser, model.Skip, model.Take, model.Order);
 
             var invitationsModel = invitations
-                .Select(i => this.invitationViewModelFactory.Create(i.Id, i.SentDate, i.Group.Name, i.Receiver.UserName));
+                .Select(i => new InvitationViewModel(i.Id, i.SentDate, i.Group.Name, i.Receiver.UserName));
 
             return this.Ok(invitationsModel);
         }

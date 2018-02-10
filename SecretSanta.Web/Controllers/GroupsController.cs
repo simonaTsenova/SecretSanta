@@ -3,7 +3,7 @@ using SecretSanta.Web.Models.Groups;
 using System.Web.Http;
 using System.Net;
 using System.Linq;
-using SecretSanta.Web.Infrastructure.Factories;
+using SecretSanta.Web.Models.Users;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -14,22 +14,16 @@ namespace SecretSanta.Web.Controllers
         private readonly ISessionService sessionService;
         private readonly IUserService userService;
         private readonly IInvitationService invitationService;
-        private readonly IDisplayGroupViewModelFactory viewModelsFactory;
-        private readonly IDisplayUserViewModelFactory userViewModelFactory;
 
         public GroupsController(IGroupService groupService, 
             ISessionService sessionService, 
             IUserService userService, 
-            IInvitationService invitationService,
-            IDisplayGroupViewModelFactory viewModelsFactory, 
-            IDisplayUserViewModelFactory userViewModelFactory)
+            IInvitationService invitationService)
         {
             this.groupService = groupService;
             this.sessionService = sessionService;
             this.userService = userService;
             this.invitationService = invitationService;
-            this.viewModelsFactory = viewModelsFactory;
-            this.userViewModelFactory = userViewModelFactory;
         }
 
         // POST ~/groups 
@@ -56,10 +50,9 @@ namespace SecretSanta.Web.Controllers
 
             var group = this.groupService.CreateGroup(model.Name, currentUser);
 
-            var members = group.Users.Select(u => this.userViewModelFactory
-                .CreateDisplayUserViewModel(u.Email, u.FirstName, u.LastName, u.DisplayName, u.UserName))
+            var members = group.Users.Select(u => new DisplayUserViewModel(u.Email, u.FirstName, u.LastName, u.DisplayName, u.UserName))
                 .ToList();
-            var groupModel = this.viewModelsFactory.CreateDisplayGroupViewModel(group.Name, group.Admin.UserName, members);
+            var groupModel = new DisplayGroupViewModel(group.Name, group.Admin.UserName, members);
 
             return this.Content(HttpStatusCode.Created, groupModel);
         }
@@ -111,8 +104,7 @@ namespace SecretSanta.Web.Controllers
             }
 
             var participants = group.Users;
-            var modelParticipants = participants.Select(p => this.userViewModelFactory
-                .CreateDisplayUserViewModel(p.Email, p.FirstName, p.LastName, p.DisplayName, p.UserName));
+            var modelParticipants = participants.Select(p => new DisplayUserViewModel(p.Email, p.FirstName, p.LastName, p.DisplayName, p.UserName));
 
             return this.Content(HttpStatusCode.OK, modelParticipants);
         }
