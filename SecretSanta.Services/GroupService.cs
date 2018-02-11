@@ -66,5 +66,12 @@ namespace SecretSanta.Services
 
             return group;
         }
+
+        public void MakeProcessStarted(Group group)
+        {
+            group.hasLinkingProcessStarted = true;
+
+            this.unitOfWork.Commit();
+        }
     }
 }

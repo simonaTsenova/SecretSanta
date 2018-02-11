@@ -1,10 +1,20 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace SecretSanta.Models
 {
     public class Link
     {
+        public Link()
+        {
+        }
+
+        public Link(Group group, User sender, User receiver)
+        {
+            this.Group = group;
+            this.Sender = sender;
+            this.Receiver = receiver;
+        }
+
         public Guid Id { get; set; }
 
         public Guid GroupId { get; set; }

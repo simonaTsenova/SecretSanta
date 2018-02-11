@@ -41,6 +41,11 @@ namespace SecretSanta.Services
                 take = users.Count();
             }
 
+            if(take == 0)
+            {
+                take = 1;
+            }
+
             users = users.Skip(skip).Take(take);
 
             return users.ToList();

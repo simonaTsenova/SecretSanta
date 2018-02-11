@@ -5,5 +5,7 @@ namespace SecretSanta.Services.Contracts
     public interface ILinkService
     {
         Link GetByGroupAndSender(string groupname, string senderUsername);
+
+        void CreateLinks(Group group);
     }
 }

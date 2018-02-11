@@ -37,14 +37,8 @@ namespace SecretSanta.Services
             }
         }
 
-        public void CreateUserSession(string userName, string authtoken)
+        public void CreateUserSession(User user, string authtoken)
         {
-            var user = this.userService.GetUserByUserName(userName);
-            if (user == null)
-            {
-                throw new ObjectNotFoundException();
-            }
-
             var sessionTimeout = new TimeSpan(0, 10, 0);
             var expirationDateTime = DateTime.Now + sessionTimeout;
             var userSession = this.userSessionFactory.Create(user.Id, authtoken, expirationDateTime);
@@ -119,6 +113,15 @@ namespace SecretSanta.Services
             }
 
             return authToken;
+        }
+
+        public UserSession GetSessionByUserId(string userId)
+        {
+            var userSession = this.userSessionRepository.All
+                .Where(u => u.User.Id == userId)
+                .FirstOrDefault();
+
+            return userSession;
         }
     }
 }

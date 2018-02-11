@@ -4,6 +4,8 @@ using System.Web.Http;
 using System.Net;
 using System.Linq;
 using SecretSanta.Web.Models.Users;
+using SecretSanta.Models;
+using System;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -14,16 +16,19 @@ namespace SecretSanta.Web.Controllers
         private readonly ISessionService sessionService;
         private readonly IUserService userService;
         private readonly IInvitationService invitationService;
+        private readonly ILinkService linkService;
 
         public GroupsController(IGroupService groupService, 
             ISessionService sessionService, 
             IUserService userService, 
-            IInvitationService invitationService)
+            IInvitationService invitationService,
+            ILinkService linkService)
         {
             this.groupService = groupService;
             this.sessionService = sessionService;
             this.userService = userService;
             this.invitationService = invitationService;
+            this.linkService = linkService;
         }
 
         // POST ~/groups 
@@ -144,6 +149,44 @@ namespace SecretSanta.Web.Controllers
             }
 
             return this.StatusCode(HttpStatusCode.NoContent);
+        }
+
+        // POST ~/groups/{groupname}/links
+        [HttpPost]
+        [Route("{groupname}/links")]
+        public IHttpActionResult StartLinkingProcess(string groupname)
+        {
+            if(string.IsNullOrEmpty(groupname))
+            {
+                return this.BadRequest();
+            }
+
+            var group = this.groupService.GetGroupByName(groupname);
+            if(group == null)
+            {
+                return this.NotFound();
+            }
+
+            if(group.hasLinkingProcessStarted)
+            {
+                return this.Content(HttpStatusCode.PreconditionFailed, "Linking process can be started only once.");
+            }
+
+            if(group.Users.Count < 2 || group.Users == null)
+            {
+                return this.Content(HttpStatusCode.PreconditionFailed, "Linking process can start only in groups with more than 1 members.");
+            }
+
+            var currentUser = this.sessionService.GetCurrentUser();
+            if(currentUser.UserName != group.Admin.UserName)
+            {
+                return this.Content(HttpStatusCode.Forbidden, "You must be an admin to start linking.");
+            }
+
+            this.linkService.CreateLinks(group);
+            this.groupService.MakeProcessStarted(group);
+
+            return this.Content(HttpStatusCode.Created, "Linking process has been done for this group");
         }
     }
 }

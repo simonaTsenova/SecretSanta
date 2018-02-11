@@ -9,7 +9,6 @@ using SecretSanta.Factories;
 using SecretSanta.Services;
 using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Controllers;
-using SecretSanta.Web.Infrastructure.Factories;
 using SecretSanta.Web.Infrastructure.Filters;
 using System.Reflection;
 using System.Web.Http;
@@ -35,12 +34,9 @@ namespace SecretSanta.Web
 
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IGroupFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserFactory>(builder).ReturningConcreteType();
+            AutofacTypedFactoryExtensions.RegisterTypedFactory<ILinkFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IInvitationFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserSessionFactory>(builder).ReturningConcreteType();
-
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IDisplayUserViewModelFactory>(builder).ReturningConcreteType();
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IDisplayGroupViewModelFactory>(builder).ReturningConcreteType();
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IInvitationViewModelFactory>(builder).ReturningConcreteType();
 
             builder.RegisterType<UserService>().As<IUserService>().InstancePerRequest();
             builder.RegisterType<GroupService>().As<IGroupService>().InstancePerRequest();

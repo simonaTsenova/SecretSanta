@@ -11,5 +11,7 @@ namespace SecretSanta.Services.Contracts
         void AddParticipant(Group group, User user);
 
         bool RemoveParticipant(Group group, User user);
+
+        void MakeProcessStarted(Group group);
     }
 }

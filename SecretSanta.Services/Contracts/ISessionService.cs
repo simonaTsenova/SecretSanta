@@ -4,7 +4,7 @@ namespace SecretSanta.Services.Contracts
 {
     public interface ISessionService
     {
-        void CreateUserSession(string userName, string authtoken);
+        void CreateUserSession(User user, string authtoken);
 
         void DeleteExpiredSessions();
 
@@ -13,5 +13,7 @@ namespace SecretSanta.Services.Contracts
         UserSession GetCurrentSession();
 
         User GetCurrentUser();
+
+        UserSession GetSessionByUserId(string userId);
     }
 }

@@ -18,10 +18,12 @@ namespace SecretSanta.Web.Controllers
     public class AccountController : ApiController
     {
         private readonly ISessionService sessionService;
+        private readonly IUserService userService;
 
-        public AccountController(ISessionService sessionService)
+        public AccountController(ISessionService sessionService, IUserService userService)
         {
             this.sessionService = sessionService ?? throw new ArgumentNullException("Service cannot be null");
+            this.userService = userService ?? throw new ArgumentNullException("Service cannot be null");
         }
 
         public IAuthenticationManager AuthenticationManager
@@ -74,15 +76,20 @@ namespace SecretSanta.Web.Controllers
                 var userName = responseDeserialized["userName"];
                 var expirationDate = responseDeserialized[".expires"];
 
-                try
-                {
-                    this.sessionService.CreateUserSession(userName, authToken);
-                }
-                catch (ObjectNotFoundException)
+                var user = this.userService.GetUserByUserName(userName);
+                if (user == null)
                 {
                     return this.NotFound();
                 }
 
+                var userSession = this.sessionService.GetSessionByUserId(user.Id);
+                if (userSession != null && userSession.ExpiresOn > DateTime.Now)
+                {
+                    // Session already exists and has not expired
+                    return this.Content(HttpStatusCode.Conflict, "User is already logged in.");
+                }
+
+                this.sessionService.CreateUserSession(user, authToken);
                 // Cleanup: delete expired sessions from the database
                 this.sessionService.DeleteExpiredSessions();
 

@@ -9,7 +9,6 @@ using System.Web.Http.ModelBinding;
 using SecretSanta.Web.Models;
 using SecretSanta.Services.Contracts;
 using System.Linq;
-using SecretSanta.Web.Infrastructure.Factories;
 using SecretSanta.Web.Models.Invitations;
 using SecretSanta.Web.Models.Groups;
 
@@ -104,7 +103,7 @@ namespace SecretSanta.Web.Controllers
         [Route("")]
         public IHttpActionResult GetAllUsers([FromUri]ResultFormatViewModel formatModel)
         {
-            if (formatModel == null)
+            if (formatModel == null || !ModelState.IsValid)
             {
                 return this.BadRequest();
             }
