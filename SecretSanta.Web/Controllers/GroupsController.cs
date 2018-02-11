@@ -156,25 +156,30 @@ namespace SecretSanta.Web.Controllers
         [Route("{groupname}/links")]
         public IHttpActionResult StartLinkingProcess(string groupname)
         {
-            if(string.IsNullOrEmpty(groupname))
+            if (string.IsNullOrEmpty(groupname))
             {
                 return this.BadRequest();
             }
 
             var group = this.groupService.GetGroupByName(groupname);
-            if(group == null)
+            if (group == null)
             {
                 return this.NotFound();
             }
 
-            if(group.hasLinkingProcessStarted)
+            if (group.hasLinkingProcessStarted)
             {
                 return this.Content(HttpStatusCode.PreconditionFailed, "Linking process can be started only once.");
             }
 
-            if(group.Users.Count < 2 || group.Users == null)
+            if (group.Users.Count < 2 || group.Users == null)
             {
                 return this.Content(HttpStatusCode.PreconditionFailed, "Linking process can start only in groups with more than 1 members.");
+            }
+
+            if (group.Users.Count % 2 != 0)
+            {
+                return this.Content(HttpStatusCode.PreconditionFailed, "Linking process cannot start in a group with odd number of members.");
             }
 
             var currentUser = this.sessionService.GetCurrentUser();
