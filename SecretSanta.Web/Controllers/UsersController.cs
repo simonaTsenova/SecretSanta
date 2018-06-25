@@ -103,7 +103,7 @@ namespace SecretSanta.Web.Controllers
         [Route("")]
         public IHttpActionResult GetAllUsers([FromUri]ResultFormatViewModel formatModel)
         {
-            if (formatModel == null || !ModelState.IsValid)
+            if (formatModel == null)
             {
                 return this.BadRequest();
             }
