@@ -1,6 +1,7 @@
 ﻿using Microsoft.Owin;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
+using SecretSanta.Authentication.Managers;
 using SecretSanta.Data;
 using SecretSanta.Web.Providers;
 using System;
@@ -9,16 +10,16 @@ namespace SecretSanta.Web
 {
     public partial class Startup
     {
-        public const string TokenEndpointPath = "/token";
-        public static string PublicClientId = "self";
+        public const string TOKEN_ENDPOINT_PATH = "/token";
+        public static string PUBLIC_CLIENT_ID = "self";
         public static OAuthAuthorizationServerOptions OAuthOptions { get; private set; }
 
         static Startup()
         {
             OAuthOptions = new OAuthAuthorizationServerOptions
             {
-                TokenEndpointPath = new PathString(TokenEndpointPath),
-                Provider = new ApplicationOAuthProvider(PublicClientId),
+                TokenEndpointPath = new PathString(TOKEN_ENDPOINT_PATH),
+                Provider = new ApplicationOAuthProvider(PUBLIC_CLIENT_ID),
                 AccessTokenExpireTimeSpan = TimeSpan.FromDays(365),
                 AllowInsecureHttp = true
             };
@@ -26,11 +27,9 @@ namespace SecretSanta.Web
 
         public void ConfigureAuth(IAppBuilder app)
         { 
-            // Configure the db context, user manager to use a single instance per request
             app.CreatePerOwinContext(SecretSantaDbContext.Create);
             app.CreatePerOwinContext<ApplicationUserManager>(ApplicationUserManager.Create);
 
-            // Enable the application to use bearer tokens to authenticate users
             app.UseOAuthBearerTokens(OAuthOptions);
         }
     }

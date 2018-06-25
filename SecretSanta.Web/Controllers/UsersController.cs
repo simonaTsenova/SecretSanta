@@ -1,6 +1,4 @@
-﻿using System.Net.Http;
-using System.Web.Http;
-using Microsoft.AspNet.Identity.Owin;
+﻿using System.Web.Http;
 using System.Threading.Tasks;
 using SecretSanta.Web.Models.Users;
 using SecretSanta.Factories;
@@ -11,13 +9,16 @@ using SecretSanta.Services.Contracts;
 using System.Linq;
 using SecretSanta.Web.Models.Invitations;
 using SecretSanta.Web.Models.Groups;
+using System.Collections.Generic;
+using System.Web.Script.Serialization;
+using System;
+using SecretSanta.Authentication.Contracts;
 
 namespace SecretSanta.Web.Controllers
 {
-    [RoutePrefix("api/users")]
     public class UsersController : ApiController
     {
-        private ApplicationUserManager applicationUserManager;
+        private IAuthenticationProvider authenticationProvider;
         private readonly IUserService userService;
         private readonly IGroupService groupService;
         private readonly ISessionService sessionService;
@@ -25,10 +26,11 @@ namespace SecretSanta.Web.Controllers
         private readonly ILinkService linkService;
         private readonly IUserFactory userFactory;
 
-        public UsersController(IUserService userService, IGroupService groupService,
+        public UsersController(IAuthenticationProvider authenticationProvider, IUserService userService, IGroupService groupService,
             ISessionService sessionService, IInvitationService invitationService, ILinkService linkService,
             IUserFactory userFactory)
         {
+            this.authenticationProvider = authenticationProvider;
             this.userService = userService;
             this.groupService = groupService;
             this.sessionService = sessionService;
@@ -37,28 +39,11 @@ namespace SecretSanta.Web.Controllers
             this.userFactory = userFactory;
         }
 
-        public ApplicationUserManager UserManager
-        {
-            get
-            {
-                if (this.applicationUserManager == null)
-                {
-                    return Request.GetOwinContext().GetUserManager<ApplicationUserManager>();
-                }
-
-                return this.applicationUserManager;
-            }
-            private set
-            {
-                this.applicationUserManager = value;
-            }
-        }
-
         // POST ~/users
         [HttpPost]
+        [Route("api/users")]
         [AllowAnonymous]
-        [Route("")]
-        public async Task<IHttpActionResult> RegisterUser(RegisterUserViewModel model)
+        public IHttpActionResult Register(RegisterUserViewModel model)
         {
             if (model == null)
             {
@@ -72,7 +57,7 @@ namespace SecretSanta.Web.Controllers
 
             var user = this.userFactory.Create(model.Email, model.UserName,
                 model.DisplayName, model.FirstName, model.LastName);
-            var identityResult = await this.UserManager.CreateAsync(user, model.Password);
+            var identityResult = this.authenticationProvider.RegisterUser(user, model.Password);
 
             if (!identityResult.Succeeded)
             {
@@ -86,7 +71,7 @@ namespace SecretSanta.Web.Controllers
 
                 if (ModelState.IsValid)
                 {
-                    return BadRequest();
+                    return this.BadRequest();
                 }
 
                 return this.Content<ModelStateDictionary>(HttpStatusCode.Conflict, ModelState);
@@ -98,9 +83,64 @@ namespace SecretSanta.Web.Controllers
             return this.Created("/api/users", userModel);
         }
 
+        // POST ~/login
+        [HttpPost]
+        [Route("api/login")]
+        [AllowAnonymous]
+        public async Task<IHttpActionResult> Login(LoginUserViewModel model)
+        {
+            if (model == null)
+            {
+                return this.BadRequest("Model not valid");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return this.BadRequest("User data not valid");
+            }
+
+            var response = await this.authenticationProvider.GetAccessToken(model.UserName, model.Password);
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            if (responseString.Contains("invalid_grant"))
+            {
+                return this.Content(HttpStatusCode.Unauthorized, "The user name or password is incorrect.");
+            }
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                var jsSerializer = new JavaScriptSerializer();
+                var responseDeserialized =
+                    jsSerializer.Deserialize<Dictionary<string, string>>(responseString);
+                var authToken = responseDeserialized["access_token"];
+                var userName = responseDeserialized["userName"];
+
+                var user = this.userService.GetUserByUserName(userName);
+                if (user == null)
+                {
+                    return this.NotFound();
+                }
+
+                var userSession = this.sessionService.GetSessionByUserId(user.Id);
+                if (userSession != null && userSession.ExpiresOn > DateTime.Now)
+                {
+                    // Session already exists and has not expired
+                    return this.Content(HttpStatusCode.Conflict, "User is already logged in.");
+                }
+
+                this.sessionService.CreateUserSession(user, authToken);
+                // Cleanup: delete expired sessions from the database
+                this.sessionService.DeleteExpiredSessions();
+
+                return this.Content(HttpStatusCode.Created, new { access_token = authToken });
+            }
+
+            return this.ResponseMessage(response);
+        }
+
         // GET ~/users?skip={s}&take={t}&order={Asc|Desc}&search={phrase}
         [HttpGet]
-        [Route("")]
+        [Route("api/users")]
         public IHttpActionResult GetAllUsers([FromUri]ResultFormatViewModel formatModel)
         {
             if (formatModel == null)
@@ -117,7 +157,7 @@ namespace SecretSanta.Web.Controllers
 
         // GET ~/users/{username}
         [HttpGet]
-        [Route("{username}")]
+        [Route("api/users/{username}")]
         public IHttpActionResult GetUser(string username)
         {
             if (string.IsNullOrEmpty(username))
@@ -136,9 +176,9 @@ namespace SecretSanta.Web.Controllers
             return this.Ok(userModel);
         }
 
-        // POST ~/usrs/{username}/invitations
+        // POST ~/users/{username}/invitations
         [HttpPost]
-        [Route("{username}/invitations")]
+        [Route("api/users/{username}/invitations")]
         public IHttpActionResult SendInvitation([FromUri] string username, InvitationViewModel model)
         {
             if (string.IsNullOrEmpty(username) || model == null || !ModelState.IsValid)
@@ -174,7 +214,7 @@ namespace SecretSanta.Web.Controllers
 
         // GET ~/users/{username}/invitations?skip={s}&take={t}&order={A|D}
         [HttpGet]
-        [Route("{username}/invitations")]
+        [Route("api/users/{username}/invitations")]
         public IHttpActionResult GetUserInvitations(string username, [FromUri]ResultFormatViewModel model)
         {
             if (string.IsNullOrEmpty(username) || model == null)
@@ -225,7 +265,7 @@ namespace SecretSanta.Web.Controllers
 
         // GET ~/users/{username}/groups?skip={s}&take={t}
         [HttpGet]
-        [Route("{username}/groups")]
+        [Route("api/users/{username}/groups")]
         public IHttpActionResult GetUserGroups(string username, [FromUri]PagingViewModel model)
         {
             if (string.IsNullOrEmpty(username) || model == null)
@@ -247,7 +287,7 @@ namespace SecretSanta.Web.Controllers
 
         // GET ~users/{username}/groups/{groupname}/links
         [HttpGet]
-        [Route("{username}/groups/{groupname}/links")]
+        [Route("api/users/{username}/groups/{groupname}/links")]
         public IHttpActionResult GetUserGroupConnection(string username, string groupname)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(groupname))

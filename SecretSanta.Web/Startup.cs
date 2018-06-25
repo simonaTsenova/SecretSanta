@@ -3,6 +3,8 @@ using Autofac.Integration.WebApi;
 using Autofac.TypedFactories;
 using Microsoft.Owin;
 using Owin;
+using SecretSanta.Authentication;
+using SecretSanta.Authentication.Contracts;
 using SecretSanta.Data;
 using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
@@ -23,14 +25,12 @@ namespace SecretSanta.Web
         {
             var builder = new ContainerBuilder();
 
+            builder.RegisterType<AuthenticationProvider>().As<IAuthenticationProvider>().InstancePerRequest();
+
             builder.RegisterType<CustomErrorFilterAttribute>().AsWebApiExceptionFilterFor<ApiController>();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<UsersController>().InstancePerRequest();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<GroupsController>().InstancePerRequest();
-            builder.RegisterType<AuthorizeFilterAttribute>()
-                .AsWebApiActionFilterFor<AccountController>(controller => controller.LogoutUser())
-                .InstancePerRequest();
 
-            // Register your Web API controllers.
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IGroupFactory>(builder).ReturningConcreteType();
@@ -49,11 +49,9 @@ namespace SecretSanta.Web
             builder.RegisterType<SecretSantaDbContext>().As<ISecretSantaDbContext>().InstancePerRequest();
             builder.RegisterGeneric(typeof(EfRepository<>)).As(typeof(IEfRepository<>)).InstancePerRequest();
 
-            // Get your HttpConfiguration.
             var config = GlobalConfiguration.Configuration;
             builder.RegisterWebApiFilterProvider(config);
 
-            // Set the dependency resolver to be Autofac.
             var container = builder.Build();
             config.DependencyResolver = new AutofacWebApiDependencyResolver(container);
 

@@ -2,6 +2,7 @@
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
+using SecretSanta.Authentication.Managers;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -56,6 +57,7 @@ namespace SecretSanta.Web.Providers
             return new AuthenticationProperties(data);
         }
 
+        //TODO delete this
         public override Task TokenEndpoint(OAuthTokenEndpointContext context)
         {
             foreach (KeyValuePair<string, string> property in context.Properties.Dictionary)
@@ -77,19 +79,19 @@ namespace SecretSanta.Web.Providers
             return Task.FromResult<object>(null);
         }
 
-        public override Task ValidateClientRedirectUri(OAuthValidateClientRedirectUriContext context)
-        {
-            if (context.ClientId == this.publicClientId)
-            {
-                Uri expectedRootUri = new Uri(context.Request.Uri, "/");
+        //public override Task ValidateClientRedirectUri(OAuthValidateClientRedirectUriContext context)
+        //{
+        //    if (context.ClientId == this.publicClientId)
+        //    {
+        //        Uri expectedRootUri = new Uri(context.Request.Uri, "/");
 
-                if (expectedRootUri.AbsoluteUri == context.RedirectUri)
-                {
-                    context.Validated();
-                }
-            }
+        //        if (expectedRootUri.AbsoluteUri == context.RedirectUri)
+        //        {
+        //            context.Validated();
+        //        }
+        //    }
 
-            return Task.FromResult<object>(null);
-        }
+        //    return Task.FromResult<object>(null);
+        //}
     }
 }
