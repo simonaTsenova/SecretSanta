@@ -9,6 +9,7 @@ using SecretSanta.Authentication.Contracts;
 using SecretSanta.Common.Exceptions;
 using System;
 using SecretSanta.Common;
+using SecretSanta.Web.Mapper;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -17,14 +18,17 @@ namespace SecretSanta.Web.Controllers
         private readonly IAuthenticationProvider authenticationProvider;
         private readonly IGroupService groupService;
         private readonly IUserService userService;
+        private readonly IMapper mapper;
 
         public GroupsController(IAuthenticationProvider authenticationProvider,
             IGroupService groupService,
-            IUserService userService)
+            IUserService userService,
+            IMapper mapper)
         {
             this.authenticationProvider = authenticationProvider;
             this.groupService = groupService;
             this.userService = userService;
+            this.mapper = mapper;
         }
 
         // POST ~/groups 
@@ -48,9 +52,7 @@ namespace SecretSanta.Web.Controllers
                 var admin = this.userService.GetUserById(currentUserId);
                 var group = this.groupService.CreateGroup(model.Name, admin);
 
-                var members = group.Users.Select(u => new DisplayUserViewModel(u.Email, u.FirstName, u.LastName, u.DisplayName, u.UserName))
-                    .ToList();
-                var groupModel = new DisplayGroupViewModel(group.Name, group.Admin.UserName, members);
+                var groupModel = this.mapper.MapGroup(group);
 
                 return this.Content(HttpStatusCode.Created, groupModel);
             }
@@ -85,7 +87,7 @@ namespace SecretSanta.Web.Controllers
             }
 
             var groups = this.groupService.GetGroupsByUser(currentUsername, model.Skip, model.Take);
-            var modelGroups = groups.Select(g => new ShortGroupViewModel(g.Name, g.Admin.UserName));
+            var modelGroups = this.mapper.MapShortGroups(groups);
 
             return this.Ok(modelGroups);
         }
@@ -97,21 +99,19 @@ namespace SecretSanta.Web.Controllers
         {
             if (groupname == null)
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             try
             {
                 var group = this.groupService.GetGroupByName(groupname);
-
                 var currentUserId = this.authenticationProvider.CurrentUserId;
                 if (group.Admin.Id != currentUserId)
                 {
                     return this.Content(HttpStatusCode.Forbidden, Constants.GROUP_ACCESS_FORBIDDEN);
                 }
 
-                var participants = group.Users;
-                var modelParticipants = participants.Select(p => new DisplayUserViewModel(p.Email, p.FirstName, p.LastName, p.DisplayName, p.UserName));
+                var modelParticipants = this.mapper.MapUsers(group.Users);
 
                 return this.Content(HttpStatusCode.OK, modelParticipants);
             }
@@ -132,13 +132,12 @@ namespace SecretSanta.Web.Controllers
         {
             if(string.IsNullOrEmpty(groupname) || string.IsNullOrEmpty(participantUsername))
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             try
             {
                 var group = this.groupService.GetGroupByName(groupname);
-
                 var currentUserId = this.authenticationProvider.CurrentUserId;
                 if (currentUserId != group.Admin.Id)
                 {
@@ -146,6 +145,7 @@ namespace SecretSanta.Web.Controllers
                 }
 
                 var participant = this.userService.GetUserByUserName(participantUsername);
+
                 this.groupService.RemoveParticipant(group, participant);
 
                 return this.StatusCode(HttpStatusCode.NoContent);

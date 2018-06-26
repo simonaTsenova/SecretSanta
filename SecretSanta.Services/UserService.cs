@@ -4,7 +4,6 @@ using SecretSanta.Data.Contracts;
 using SecretSanta.Models;
 using SecretSanta.Models.Enumerations;
 using SecretSanta.Services.Contracts;
-using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;

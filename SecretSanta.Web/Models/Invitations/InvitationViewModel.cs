@@ -4,6 +4,10 @@ namespace SecretSanta.Web.Models.Invitations
 {
     public class InvitationViewModel
     {
+        public InvitationViewModel()
+        {
+        }
+
         public InvitationViewModel(Guid id, DateTime sentDate, string groupName, string receiver)
         {
             this.Id = id;

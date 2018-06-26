@@ -2,6 +2,7 @@
 using SecretSanta.Common;
 using SecretSanta.Common.Exceptions;
 using SecretSanta.Services.Contracts;
+using SecretSanta.Web.Mapper;
 using SecretSanta.Web.Models;
 using SecretSanta.Web.Models.Invitations;
 using System;
@@ -17,14 +18,19 @@ namespace SecretSanta.Web.Controllers
         private readonly IUserService userService;
         private readonly IGroupService groupService;
         private readonly IInvitationService invitationService;
+        private readonly IMapper mapper;
 
-        public InvitationsController(IAuthenticationProvider authenticationProvider, IUserService userService,
-            IGroupService groupService, IInvitationService invitationService)
+        public InvitationsController(IAuthenticationProvider authenticationProvider,
+            IUserService userService,
+            IGroupService groupService,
+            IInvitationService invitationService,
+            IMapper mapper)
         {
             this.authenticationProvider = authenticationProvider;
             this.userService = userService;
             this.groupService = groupService;
             this.invitationService = invitationService;
+            this.mapper = mapper;
         }
 
         // POST ~/users/{username}/invitations
@@ -34,7 +40,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(username) || model == null || !ModelState.IsValid)
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             try
@@ -49,9 +55,9 @@ namespace SecretSanta.Web.Controllers
                 }
 
                 this.invitationService.CreateInvitation(group.Id, model.SentDate, receiver.Id);
-                var invitationId = this.invitationService.GetByGroupAndUser(group.Id, receiver.Id).Id;
+                var invitation = this.invitationService.GetByGroupAndUser(group.Id, receiver.Id);
 
-                var invitationModel = new InvitationViewModel(invitationId, model.SentDate, group.Name, receiver.UserName);
+                var invitationModel = this.mapper.MapInvitation(invitation);
 
                 return this.Content(HttpStatusCode.Created, invitationModel);
             }
@@ -76,7 +82,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(username) || model == null)
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             var currentUsername = this.authenticationProvider.CurrentUserName;
@@ -87,8 +93,7 @@ namespace SecretSanta.Web.Controllers
 
             var invitations = this.invitationService.GetByUser(currentUsername, model.Skip, model.Take, model.Order);
 
-            var invitationsModel = invitations
-                .Select(i => new InvitationViewModel(i.Id, i.SentDate, i.Group.Name, i.Receiver.UserName));
+            var invitationsModel = this.mapper.MapInvitations(invitations);
 
             return this.Ok(invitationsModel);
         }
@@ -98,10 +103,13 @@ namespace SecretSanta.Web.Controllers
         [Route("api/groups/{groupname}/participants")]
         public IHttpActionResult AcceptInvitation(string groupname)
         {
+            if (string.IsNullOrEmpty(groupname))
+            {
+                return this.BadRequest(Constants.INVALID_MODEL);
+            }
+
             try
             {
-                var group = this.groupService.GetGroupByName(groupname);
-
                 var currentUserId = this.authenticationProvider.CurrentUserId;
                 var currentUser = this.userService.GetUserById(currentUserId);
                 var invitation = currentUser.Invitations.Where(i => i.Group.Name == groupname).FirstOrDefault();
@@ -109,6 +117,8 @@ namespace SecretSanta.Web.Controllers
                 {
                     return this.Content(HttpStatusCode.Forbidden, Constants.USER_HAS_NO_INVITATIONS_FOR_GROUP);
                 }
+
+                var group = this.groupService.GetGroupByName(groupname);
 
                 this.groupService.AddParticipant(group, currentUser);
                 this.invitationService.DeleteInvitation(invitation);
@@ -136,7 +146,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(id))
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             var currentUsername = this.authenticationProvider.CurrentUserName;

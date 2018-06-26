@@ -49,7 +49,9 @@ namespace SecretSanta.Services
 
         public Group CreateGroup(string name, User admin)
         {
-            var existingGroup = this.GetGroupByName(name);
+            var existingGroup = this.groupRepository.All
+                .Where(g => g.Name == name)
+                .FirstOrDefault();
             if (existingGroup != null)
             {
                 throw new ItemAlreadyExistingException(Constants.GROUP_NAME_ALREADY_EXISTS);

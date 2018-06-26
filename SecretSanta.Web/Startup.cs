@@ -14,6 +14,7 @@ using SecretSanta.Providers.Contracts;
 using SecretSanta.Services;
 using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Controllers;
+using SecretSanta.Web.Mapper;
 using System.Reflection;
 using System.Web.Http;
 
@@ -29,6 +30,7 @@ namespace SecretSanta.Web
 
             builder.RegisterType<AuthenticationProvider>().As<IAuthenticationProvider>().InstancePerRequest();
             builder.RegisterType<HttpContextProvider>().As<IHttpContextProvider>().InstancePerRequest();
+            builder.RegisterType<ViewModelsMapper>().As<IMapper>().InstancePerRequest();
 
             builder.RegisterType<CustomErrorFilterAttribute>().AsWebApiExceptionFilterFor<ApiController>();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<UsersController>().InstancePerRequest();

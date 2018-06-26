@@ -2,6 +2,7 @@
 using SecretSanta.Common;
 using SecretSanta.Common.Exceptions;
 using SecretSanta.Services.Contracts;
+using SecretSanta.Web.Mapper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +17,17 @@ namespace SecretSanta.Web.Controllers
         private readonly IAuthenticationProvider authenticationProvider;
         private readonly IGroupService groupService;
         private readonly ILinkService linkService;
+        private readonly IMapper mapper;
 
-        public LinksController(IAuthenticationProvider authenticationProvider, IGroupService groupService, ILinkService linkService)
+        public LinksController(IAuthenticationProvider authenticationProvider,
+            IGroupService groupService,
+            ILinkService linkService,
+            IMapper mapper)
         {
             this.authenticationProvider = authenticationProvider;
             this.groupService = groupService;
             this.linkService = linkService;
+            this.mapper = mapper;
         }
 
         // GET ~users/{username}/groups/{groupname}/links
@@ -31,7 +37,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(groupname))
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             try
@@ -49,9 +55,9 @@ namespace SecretSanta.Web.Controllers
                 }
 
                 var link = this.linkService.GetByGroupAndSender(groupname, username);
-                var model = new { receiver = link.Receiver.UserName };
+                var linkModel = this.mapper.MapLink(link);
 
-                return this.Ok(model);
+                return this.Ok(linkModel);
             }
             catch(ItemNotFoundException notFoundException)
             {
@@ -70,7 +76,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(groupname))
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             try

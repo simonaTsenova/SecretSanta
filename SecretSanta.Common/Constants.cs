@@ -3,6 +3,7 @@
     public static class Constants
     {
         public const string INVALID_MODEL = "Invalid or nonexisting model.";
+        public const string INVALID_USER_CREDENTIALS = "The user name or password is incorrect.";
 
         public const string USERNAME_NOT_FOUND = "User with provided username was not found.";
         public const string USER_ID_NOT_FOUND = "User with provided id was not found.";

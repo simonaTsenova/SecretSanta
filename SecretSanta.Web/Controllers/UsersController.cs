@@ -13,6 +13,7 @@ using System;
 using SecretSanta.Authentication.Contracts;
 using SecretSanta.Common;
 using SecretSanta.Common.Exceptions;
+using SecretSanta.Web.Mapper;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -21,12 +22,17 @@ namespace SecretSanta.Web.Controllers
         private IAuthenticationProvider authenticationProvider;
         private readonly IUserService userService;
         private readonly IUserFactory userFactory;
+        private readonly IMapper mapper;
 
-        public UsersController(IAuthenticationProvider authenticationProvider, IUserService userService, IUserFactory userFactory)
+        public UsersController(IAuthenticationProvider authenticationProvider,
+            IUserService userService,
+            IUserFactory userFactory,
+            IMapper mapper)
         {
             this.authenticationProvider = authenticationProvider;
             this.userService = userService;
             this.userFactory = userFactory;
+            this.mapper = mapper;
         }
 
         // POST ~/users
@@ -37,7 +43,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (model == null)
             {
-                return this.BadRequest("User credentials must be provided");
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             if (!ModelState.IsValid)
@@ -45,6 +51,7 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest(this.ModelState);
             }
 
+            // TODO maybe extract to service
             var user = this.userFactory.Create(model.Email, model.UserName,
                 model.DisplayName, model.FirstName, model.LastName);
             var identityResult = this.authenticationProvider.RegisterUser(user, model.Password);
@@ -81,12 +88,12 @@ namespace SecretSanta.Web.Controllers
         {
             if (model == null)
             {
-                return this.BadRequest("Model not valid");
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             if (!ModelState.IsValid)
             {
-                return this.BadRequest("User data not valid");
+                return this.BadRequest(ModelState);
             }
 
             var response = await this.authenticationProvider.GetAccessToken(model.UserName, model.Password);
@@ -94,7 +101,7 @@ namespace SecretSanta.Web.Controllers
 
             if (responseString.Contains("invalid_grant"))
             {
-                return this.Content(HttpStatusCode.Unauthorized, "The user name or password is incorrect.");
+                return this.Content(HttpStatusCode.Unauthorized, Constants.INVALID_USER_CREDENTIALS);
             }
 
             if (response.StatusCode == HttpStatusCode.OK)
@@ -120,9 +127,10 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest(Constants.INVALID_MODEL);
             }
 
-            var usersModel = this.userService
-                .GetAllUsers(formatModel.Skip, formatModel.Take, formatModel.Order, formatModel.Search)
-                .Select(user => new DisplayUserViewModel(user.Email, user.FirstName, user.LastName, user.DisplayName, user.UserName));
+            var users = this.userService
+                .GetAllUsers(formatModel.Skip, formatModel.Take, formatModel.Order, formatModel.Search);
+
+            var usersModel = this.mapper.MapUsers(users);
 
             return this.Ok(usersModel);
         }
@@ -141,7 +149,7 @@ namespace SecretSanta.Web.Controllers
             {
                 var user = this.userService.GetUserByUserName(username);
 
-                var userModel = new DisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
+                var userModel = this.mapper.MapUser(user);
 
                 return this.Ok(userModel);
             }

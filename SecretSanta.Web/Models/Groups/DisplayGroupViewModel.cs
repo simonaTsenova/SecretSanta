@@ -7,7 +7,7 @@ namespace SecretSanta.Web.Models.Groups
     {
         public DisplayGroupViewModel()
         {
-            this.members = new List<DisplayUserViewModel>();
+            this.Members = new List<DisplayUserViewModel>();
         }
 
         public DisplayGroupViewModel(string name, string admin)
@@ -21,13 +21,13 @@ namespace SecretSanta.Web.Models.Groups
         {
             this.GroupName = name;
             this.Admin = admin;
-            this.members = members;
+            this.Members = members;
         }
 
         public string GroupName { get; set; }
 
         public string Admin { get; set; }
 
-        public ICollection<DisplayUserViewModel> members;
+        public ICollection<DisplayUserViewModel> Members;
     }
 }
