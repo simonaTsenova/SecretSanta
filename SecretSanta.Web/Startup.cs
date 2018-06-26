@@ -5,13 +5,15 @@ using Microsoft.Owin;
 using Owin;
 using SecretSanta.Authentication;
 using SecretSanta.Authentication.Contracts;
+using SecretSanta.Common.Filters;
 using SecretSanta.Data;
 using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
+using SecretSanta.Providers;
+using SecretSanta.Providers.Contracts;
 using SecretSanta.Services;
 using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Controllers;
-using SecretSanta.Web.Infrastructure.Filters;
 using System.Reflection;
 using System.Web.Http;
 
@@ -26,6 +28,7 @@ namespace SecretSanta.Web
             var builder = new ContainerBuilder();
 
             builder.RegisterType<AuthenticationProvider>().As<IAuthenticationProvider>().InstancePerRequest();
+            builder.RegisterType<HttpContextProvider>().As<IHttpContextProvider>().InstancePerRequest();
 
             builder.RegisterType<CustomErrorFilterAttribute>().AsWebApiExceptionFilterFor<ApiController>();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<UsersController>().InstancePerRequest();

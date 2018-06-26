@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
+using SecretSanta.Providers.Contracts;
 
 namespace SecretSanta.Authentication
 {
@@ -15,6 +16,12 @@ namespace SecretSanta.Authentication
     {
         private const string TOKEN_ENDPOINT_PATH = "/token";
         private ApplicationUserManager applicationUserManager;
+        private IHttpContextProvider httpContextProvider;
+
+        public AuthenticationProvider(IHttpContextProvider httpContextProvider)
+        {
+            this.httpContextProvider = httpContextProvider;
+        }
 
         public ApplicationUserManager UserManager
         {
@@ -23,14 +30,23 @@ namespace SecretSanta.Authentication
                 if (this.applicationUserManager == null)
                 {
                     //return Request.GetOwinContext().GetUserManager<ApplicationUserManager>();
-                    return HttpContext.Current.GetOwinContext().GetUserManager<ApplicationUserManager>();
+                    return httpContextProvider.CurrentHttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
                 }
 
                 return this.applicationUserManager;
             }
+
             private set
             {
                 this.applicationUserManager = value;
+            }
+        }
+
+        public string CurrentUserId
+        {
+            get
+            {
+                return httpContextProvider.CurrentHttpContext.User.Identity.GetUserId();
             }
         }
 
@@ -50,7 +66,7 @@ namespace SecretSanta.Authentication
                 {"password", password},
             };
             var requestParamsEncoded = new FormUrlEncodedContent(requestParams);
-            var baseAddress = HttpContext.Current.Request.Url.GetLeftPart(UriPartial.Authority);
+            var baseAddress = httpContextProvider.CurrentHttpContext.Request.Url.GetLeftPart(UriPartial.Authority);
             var httpClient = new HttpClient();
             var response =  await httpClient.PostAsync(baseAddress + TOKEN_ENDPOINT_PATH, requestParamsEncoded);
             return response;

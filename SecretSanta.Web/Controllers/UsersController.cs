@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System;
 using SecretSanta.Authentication.Contracts;
+using SecretSanta.Common;
+using SecretSanta.Common.Exceptions;
 
 namespace SecretSanta.Web.Controllers
 {
@@ -18,15 +20,12 @@ namespace SecretSanta.Web.Controllers
     {
         private IAuthenticationProvider authenticationProvider;
         private readonly IUserService userService;
-        private readonly ISessionService sessionService;
         private readonly IUserFactory userFactory;
 
-        public UsersController(IAuthenticationProvider authenticationProvider, IUserService userService,
-            ISessionService sessionService, IUserFactory userFactory)
+        public UsersController(IAuthenticationProvider authenticationProvider, IUserService userService, IUserFactory userFactory)
         {
             this.authenticationProvider = authenticationProvider;
             this.userService = userService;
-            this.sessionService = sessionService;
             this.userFactory = userFactory;
         }
 
@@ -104,24 +103,6 @@ namespace SecretSanta.Web.Controllers
                 var responseDeserialized =
                     jsSerializer.Deserialize<Dictionary<string, string>>(responseString);
                 var authToken = responseDeserialized["access_token"];
-                var userName = responseDeserialized["userName"];
-
-                var user = this.userService.GetUserByUserName(userName);
-                if (user == null)
-                {
-                    return this.NotFound();
-                }
-
-                var userSession = this.sessionService.GetSessionByUserId(user.Id);
-                if (userSession != null && userSession.ExpiresOn > DateTime.Now)
-                {
-                    // Session already exists and has not expired
-                    return this.Content(HttpStatusCode.Conflict, "User is already logged in.");
-                }
-
-                this.sessionService.CreateUserSession(user, authToken);
-                // Cleanup: delete expired sessions from the database
-                this.sessionService.DeleteExpiredSessions();
 
                 return this.Content(HttpStatusCode.Created, new { access_token = authToken });
             }
@@ -136,7 +117,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (formatModel == null)
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.REQUIRED_RESULT_FORMAT);
             }
 
             var usersModel = this.userService
@@ -153,18 +134,25 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(username))
             {
-                return this.BadRequest("Username must be provided");
+                return this.BadRequest(Constants.REQUIRED_USERNAME);
             }
 
-            var user = this.userService.GetUserByUserName(username);
-            if (user == null)
+            try
             {
-                return this.NotFound();
+                var user = this.userService.GetUserByUserName(username);
+
+                var userModel = new DisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
+
+                return this.Ok(userModel);
             }
-
-            var userModel = new DisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
-
-            return this.Ok(userModel);
+            catch (ItemNotFoundException notFoundException)
+            {
+                return this.Content(HttpStatusCode.NotFound, notFoundException.Message);
+            }
+            catch (Exception ex)
+            {
+                return this.Content(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
     }
 }

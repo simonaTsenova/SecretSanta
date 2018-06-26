@@ -1,4 +1,6 @@
-﻿using SecretSanta.Data.Contracts;
+﻿using SecretSanta.Common;
+using SecretSanta.Common.Exceptions;
+using SecretSanta.Data.Contracts;
 using SecretSanta.Models;
 using SecretSanta.Models.Enumerations;
 using SecretSanta.Services.Contracts;
@@ -15,7 +17,7 @@ namespace SecretSanta.Services
 
         public UserService(IEfRepository<User> userRepository)
         {
-            this.userRepository = userRepository ?? throw new ArgumentNullException();
+            this.userRepository = userRepository;
         }
 
         public IEnumerable<User> GetAllUsers(int skip, int take, OrderType order, string searchPhrase)
@@ -56,6 +58,11 @@ namespace SecretSanta.Services
             var user = this.userRepository.All
                 .Where(u => u.UserName == userName)
                 .FirstOrDefault();
+
+            if (user == null)
+            {
+                throw new ItemNotFoundException(Constants.USERNAME_NOT_FOUND);
+            }
 
             return user;
         }
