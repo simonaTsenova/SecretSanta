@@ -42,7 +42,6 @@ namespace SecretSanta.Web
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<ILinkFactory>(builder).ReturningConcreteType();
             AutofacTypedFactoryExtensions.RegisterTypedFactory<IInvitationFactory>(builder).ReturningConcreteType();
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserSessionFactory>(builder).ReturningConcreteType();
 
             builder.RegisterType<UserService>().As<IUserService>().InstancePerRequest();
             builder.RegisterType<GroupService>().As<IGroupService>().InstancePerRequest();

@@ -25,14 +25,11 @@ namespace SecretSanta.Data
 
         public DbSet<Link> Links { get; set; }
 
-        public DbSet<UserSession> UserSessions { get; set; }
-
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Configurations.Add(new UserEntityConfiguration());
-            modelBuilder.Configurations.Add(new UserSessionEntityConfiguration());
             modelBuilder.Configurations.Add(new GroupEntityConfiguration());
             modelBuilder.Configurations.Add(new InvitationEntityConfiguration());
             modelBuilder.Configurations.Add(new LinkEntityConfiguration());
