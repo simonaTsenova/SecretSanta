@@ -30,6 +30,8 @@ namespace SecretSanta.Web
             builder.RegisterType<CustomErrorFilterAttribute>().AsWebApiExceptionFilterFor<ApiController>();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<UsersController>().InstancePerRequest();
             builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<GroupsController>().InstancePerRequest();
+            builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<InvitationsController>().InstancePerRequest();
+            builder.RegisterType<AuthorizeFilterAttribute>().AsWebApiActionFilterFor<LinksController>().InstancePerRequest();
 
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 

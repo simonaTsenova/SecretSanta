@@ -7,8 +7,6 @@ using System.Web.Http.ModelBinding;
 using SecretSanta.Web.Models;
 using SecretSanta.Services.Contracts;
 using System.Linq;
-using SecretSanta.Web.Models.Invitations;
-using SecretSanta.Web.Models.Groups;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System;
@@ -20,22 +18,15 @@ namespace SecretSanta.Web.Controllers
     {
         private IAuthenticationProvider authenticationProvider;
         private readonly IUserService userService;
-        private readonly IGroupService groupService;
         private readonly ISessionService sessionService;
-        private readonly IInvitationService invitationService;
-        private readonly ILinkService linkService;
         private readonly IUserFactory userFactory;
 
-        public UsersController(IAuthenticationProvider authenticationProvider, IUserService userService, IGroupService groupService,
-            ISessionService sessionService, IInvitationService invitationService, ILinkService linkService,
-            IUserFactory userFactory)
+        public UsersController(IAuthenticationProvider authenticationProvider, IUserService userService,
+            ISessionService sessionService, IUserFactory userFactory)
         {
             this.authenticationProvider = authenticationProvider;
             this.userService = userService;
-            this.groupService = groupService;
             this.sessionService = sessionService;
-            this.invitationService = invitationService;
-            this.linkService = linkService;
             this.userFactory = userFactory;
         }
 
@@ -174,148 +165,6 @@ namespace SecretSanta.Web.Controllers
             var userModel = new DisplayUserViewModel(user.Email, user.UserName, user.DisplayName, user.FirstName, user.LastName);
 
             return this.Ok(userModel);
-        }
-
-        // POST ~/users/{username}/invitations
-        [HttpPost]
-        [Route("api/users/{username}/invitations")]
-        public IHttpActionResult SendInvitation([FromUri] string username, InvitationViewModel model)
-        {
-            if (string.IsNullOrEmpty(username) || model == null || !ModelState.IsValid)
-            {
-                return this.BadRequest();
-            }
-
-            var group = this.groupService.GetGroupByName(model.GroupName);
-            var receiver = this.userService.GetUserByUserName(username);
-            if (group == null || receiver == null)
-            {
-                return this.NotFound();
-            }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if (currentUser.UserName != group.Admin.UserName)
-            {
-                return this.Content(HttpStatusCode.Forbidden, "Only admins can send invitations for groups.");
-            }
-
-            var existingInvitation = this.invitationService.GetByGroupAndUser(model.GroupName, username);
-            if (existingInvitation != null)
-            {
-                return this.Content(HttpStatusCode.Conflict, "This user already has an invitation for this group.");
-            }
-
-            this.invitationService.CreateInvitation(group.Id, model.SentDate, receiver.Id);
-            var invitationId = this.invitationService.GetByGroupAndUser(group.Name, receiver.UserName).Id;
-            var invitationModel = new InvitationViewModel(invitationId, model.SentDate, group.Name, receiver.UserName);
-
-            return this.Content(HttpStatusCode.Created, invitationModel);
-        }
-
-        // GET ~/users/{username}/invitations?skip={s}&take={t}&order={A|D}
-        [HttpGet]
-        [Route("api/users/{username}/invitations")]
-        public IHttpActionResult GetUserInvitations(string username, [FromUri]ResultFormatViewModel model)
-        {
-            if (string.IsNullOrEmpty(username) || model == null)
-            {
-                return this.BadRequest();
-            }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if (currentUser.UserName != username)
-            {
-                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to access their invitations.");
-            }
-
-            var invitations = this.userService.GetUserInvitations(currentUser, model.Skip, model.Take, model.Order);
-
-            var invitationsModel = invitations
-                .Select(i => new InvitationViewModel(i.Id, i.SentDate, i.Group.Name, i.Receiver.UserName));
-
-            return this.Ok(invitationsModel);
-        }
-
-        // DELETE ~/users/{username}/invitations/{id}
-        [HttpDelete]
-        [Route("{username}/invitations/{id}")]
-        public IHttpActionResult DeleteInvitation(string username, string id)
-        {
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(id))
-            {
-                return this.BadRequest();
-            }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if (currentUser.UserName != username)
-            {
-                return this.StatusCode(HttpStatusCode.Forbidden);
-            }
-
-            var invitation = this.invitationService.GetById(id);
-            if (invitation == null || invitation.ReceiverId != currentUser.Id)
-            {
-                return this.Content(HttpStatusCode.Conflict, "Invitation does not exist.");
-            }
-
-            this.invitationService.DeleteInvitation(invitation);
-
-            return this.StatusCode(HttpStatusCode.NoContent);
-        }
-
-        // GET ~/users/{username}/groups?skip={s}&take={t}
-        [HttpGet]
-        [Route("api/users/{username}/groups")]
-        public IHttpActionResult GetUserGroups(string username, [FromUri]PagingViewModel model)
-        {
-            if (string.IsNullOrEmpty(username) || model == null)
-            {
-                return this.BadRequest();
-            }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if (currentUser.UserName != username)
-            {
-                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to see their groups.");
-            }
-
-            var groups = this.userService.GetUserGroups(currentUser, model.Skip, model.Take);
-            var modelGroups = groups.Select(g => new ShortGroupViewModel(g.Name, g.Admin.UserName));
-
-            return this.Ok(modelGroups);
-        }
-
-        // GET ~users/{username}/groups/{groupname}/links
-        [HttpGet]
-        [Route("api/users/{username}/groups/{groupname}/links")]
-        public IHttpActionResult GetUserGroupConnection(string username, string groupname)
-        {
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(groupname))
-            {
-                return this.BadRequest();
-            }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if (currentUser.UserName != username)
-            {
-                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to see their links.");
-            }
-
-            var group = this.groupService.GetGroupByName(groupname);
-            if (group == null)
-            {
-                return this.Content(HttpStatusCode.NotFound, "Group with this name does not exist.");
-            }
-
-            if (!group.hasLinkingProcessStarted)
-            {
-                return this.Content(HttpStatusCode.NotFound, "Linking process has not started yet.");
-            }
-
-            var connection = this.linkService.GetByGroupAndSender(groupname, username);
-            var model = new { receiver = connection.Receiver.UserName };
-
-            return this.Ok(model);
         }
     }
 }

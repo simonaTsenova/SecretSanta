@@ -4,36 +4,28 @@ using System.Web.Http;
 using System.Net;
 using System.Linq;
 using SecretSanta.Web.Models.Users;
-using SecretSanta.Models;
-using System;
+using SecretSanta.Web.Models;
 
 namespace SecretSanta.Web.Controllers
 {
-    [RoutePrefix("api/groups")]
     public class GroupsController : ApiController
     {
         private readonly IGroupService groupService;
         private readonly ISessionService sessionService;
         private readonly IUserService userService;
-        private readonly IInvitationService invitationService;
-        private readonly ILinkService linkService;
 
         public GroupsController(IGroupService groupService, 
             ISessionService sessionService, 
-            IUserService userService, 
-            IInvitationService invitationService,
-            ILinkService linkService)
+            IUserService userService)
         {
             this.groupService = groupService;
             this.sessionService = sessionService;
             this.userService = userService;
-            this.invitationService = invitationService;
-            this.linkService = linkService;
         }
 
         // POST ~/groups 
         [HttpPost]
-        [Route("")]
+        [Route("api/groups")]
         public IHttpActionResult CreateGroup(CreateGroupViewModel model)
         {
             if(model == null)
@@ -62,33 +54,31 @@ namespace SecretSanta.Web.Controllers
             return this.Content(HttpStatusCode.Created, groupModel);
         }
 
-        // POST ~/groups/{groupName}/participants
-        [HttpPost]
-        [Route("{groupname}/participants")]
-        public IHttpActionResult AcceptInvitation(string groupname)
+        // GET ~/users/{username}/groups?skip={s}&take={t}
+        [HttpGet]
+        [Route("api/users/{username}/groups")]
+        public IHttpActionResult GetUserGroups(string username, [FromUri]PagingViewModel model)
         {
-            var group = this.groupService.GetGroupByName(groupname);
-            if(group == null)
+            if (string.IsNullOrEmpty(username) || model == null)
             {
-                return this.NotFound();
+                return this.BadRequest();
             }
 
             var currentUser = this.sessionService.GetCurrentUser();
-            var invitation = currentUser.Invitations.Where(i => i.Group.Name == groupname).FirstOrDefault();
-            if(invitation == null)
+            if (currentUser.UserName != username)
             {
-                return this.Content(HttpStatusCode.Forbidden, "User has no invitations for this group.");
+                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to see their groups.");
             }
 
-            this.groupService.AddParticipant(group, currentUser);
-            this.invitationService.DeleteInvitation(invitation);
+            var groups = this.userService.GetUserGroups(currentUser, model.Skip, model.Take);
+            var modelGroups = groups.Select(g => new ShortGroupViewModel(g.Name, g.Admin.UserName));
 
-            return this.Ok();
+            return this.Ok(modelGroups);
         }
 
         // GET ~/groups/{groupname}/participants
         [HttpGet]
-        [Route("{groupname}/participants")]
+        [Route("api/groups/{groupname}/participants")]
         public IHttpActionResult GetGroupParticipants(string groupname)
         {
             if (groupname == null)
@@ -116,7 +106,7 @@ namespace SecretSanta.Web.Controllers
 
         // DELETE ~/groups/{groupName}/participants/{participantUsername}
         [HttpDelete]
-        [Route("{groupname}/participants/{participantUsername}")]
+        [Route("api/groups/{groupname}/participants/{participantUsername}")]
         public IHttpActionResult RemoveGroupParticipant(string groupname, string participantUsername)
         {
             if(string.IsNullOrEmpty(groupname) || string.IsNullOrEmpty(participantUsername))
@@ -149,49 +139,6 @@ namespace SecretSanta.Web.Controllers
             }
 
             return this.StatusCode(HttpStatusCode.NoContent);
-        }
-
-        // POST ~/groups/{groupname}/links
-        [HttpPost]
-        [Route("{groupname}/links")]
-        public IHttpActionResult StartLinkingProcess(string groupname)
-        {
-            if (string.IsNullOrEmpty(groupname))
-            {
-                return this.BadRequest();
-            }
-
-            var group = this.groupService.GetGroupByName(groupname);
-            if (group == null)
-            {
-                return this.NotFound();
-            }
-
-            if (group.hasLinkingProcessStarted)
-            {
-                return this.Content(HttpStatusCode.PreconditionFailed, "Linking process can be started only once.");
-            }
-
-            if (group.Users.Count < 2 || group.Users == null)
-            {
-                return this.Content(HttpStatusCode.PreconditionFailed, "Linking process can start only in groups with more than 1 members.");
-            }
-
-            if (group.Users.Count % 2 != 0)
-            {
-                return this.Content(HttpStatusCode.PreconditionFailed, "Linking process cannot start in a group with odd number of members.");
-            }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if(currentUser.UserName != group.Admin.UserName)
-            {
-                return this.Content(HttpStatusCode.Forbidden, "You must be an admin to start linking.");
-            }
-
-            this.linkService.CreateLinks(group);
-            this.groupService.MakeProcessStarted(group);
-
-            return this.Content(HttpStatusCode.Created, "Linking process has been done for this group");
         }
     }
 }
