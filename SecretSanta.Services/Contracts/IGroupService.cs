@@ -1,4 +1,5 @@
 ﻿using SecretSanta.Models;
+using System.Collections.Generic;
 
 namespace SecretSanta.Services.Contracts
 {
@@ -10,8 +11,10 @@ namespace SecretSanta.Services.Contracts
 
         void AddParticipant(Group group, User user);
 
-        bool RemoveParticipant(Group group, User user);
+        void RemoveParticipant(Group group, User user);
 
         void MakeProcessStarted(Group group);
+
+        IEnumerable<Group> GetGroupsByUser(string username, int skip, int take);
     }
 }

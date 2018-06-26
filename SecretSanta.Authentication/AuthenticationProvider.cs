@@ -50,6 +50,14 @@ namespace SecretSanta.Authentication
             }
         }
 
+        public string CurrentUserName
+        {
+            get
+            {
+                return httpContextProvider.CurrentHttpContext.User.Identity.GetUserName();
+            }
+        }
+
         public IdentityResult RegisterUser(User user, string password)
         {
             var result = this.UserManager.Create(user, password);

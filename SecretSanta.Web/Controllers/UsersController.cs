@@ -117,7 +117,7 @@ namespace SecretSanta.Web.Controllers
         {
             if (formatModel == null)
             {
-                return this.BadRequest(Constants.REQUIRED_RESULT_FORMAT);
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
             var usersModel = this.userService

@@ -1,4 +1,6 @@
-﻿using SecretSanta.Data.Contracts;
+﻿using SecretSanta.Common;
+using SecretSanta.Common.Exceptions;
+using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
@@ -26,6 +28,11 @@ namespace SecretSanta.Services
                 .Where(l => l.Group.Name == groupname && l.Sender.UserName == senderUsername)
                 .FirstOrDefault();
 
+            if(link == null)
+            {
+                throw new ItemNotFoundException(Constants.LINK_NOT_FOUND);
+            }
+
             return link;
         }
 
@@ -40,7 +47,6 @@ namespace SecretSanta.Services
                 var randomIndex = random.Next(0, availableReceivers.Count);
                 var currentReceiverIndex = availableReceivers[randomIndex];
 
-                // Can't give presents to yourself
                 while (currentReceiverIndex == i)
                 {
                     randomIndex = random.Next(0, availableReceivers.Count);

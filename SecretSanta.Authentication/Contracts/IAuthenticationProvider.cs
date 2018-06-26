@@ -12,5 +12,7 @@ namespace SecretSanta.Authentication.Contracts
         Task<HttpResponseMessage> GetAccessToken(string username, string password);
 
         string CurrentUserId { get; }
+
+        string CurrentUserName { get; }
     }
 }

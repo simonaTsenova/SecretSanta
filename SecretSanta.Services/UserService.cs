@@ -75,43 +75,12 @@ namespace SecretSanta.Services
                 .Include(u => u.Groups)
                 .FirstOrDefault();
 
+            if (user == null)
+            {
+                throw new ItemNotFoundException(Constants.USER_ID_NOT_FOUND);
+            }
+
             return user;
-        }
-
-        public IEnumerable<Invitation> GetUserInvitations(User user, int skip, int take, OrderType order)
-        {
-            var invitations = user.Invitations.AsQueryable();
-
-            if(order == OrderType.Descending)
-            {
-                invitations = invitations.OrderByDescending(i => i.SentDate);
-            }
-            else
-            {
-                invitations = invitations.OrderBy(i => i.SentDate);
-            }
-
-            if(skip == 0 && take == 0)
-            {
-                take = invitations.Count();
-            }
-
-            invitations = invitations.Skip(skip).Take(take);
-
-            return invitations;
-        }
-
-        public IEnumerable<Group> GetUserGroups(User user, int skip, int take)
-        {
-            var groups = user.Groups;
-            if (skip == 0 && take == 0)
-            {
-                take = groups.Count();
-            }
-
-            groups = groups.OrderBy(g => g.Name).Skip(skip).Take(take).ToList();
-
-            return groups;
         }
     }
 }

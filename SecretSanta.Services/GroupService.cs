@@ -1,4 +1,6 @@
-﻿using SecretSanta.Data.Contracts;
+﻿using SecretSanta.Common;
+using SecretSanta.Common.Exceptions;
+using SecretSanta.Data.Contracts;
 using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
@@ -24,26 +26,35 @@ namespace SecretSanta.Services
 
         public void AddParticipant(Group group, User user)
         {
+            if(group.Users.Contains(user))
+            {
+                throw new ItemAlreadyExistingException(Constants.USER_ALREADY_MEMBER_OF_GROUP);
+            }
+
             group.Users.Add(user);
             this.unitOfWork.Commit();
         }
 
-        public bool RemoveParticipant(Group group, User user)
+        public void RemoveParticipant(Group group, User user)
         {
             var isParticipant = group.Users.Contains(user);
             if(!isParticipant)
             {
-                return false;
+                throw new ItemNotFoundException(Constants.PARTICIPANT_NOT_FOUND);
             }
 
             group.Users.Remove(user);
             this.unitOfWork.Commit();
-
-            return true;
         }
 
         public Group CreateGroup(string name, User admin)
         {
+            var existingGroup = this.GetGroupByName(name);
+            if (existingGroup != null)
+            {
+                throw new ItemAlreadyExistingException(Constants.GROUP_NAME_ALREADY_EXISTS);
+            }
+
             var group = this.groupFactory.Create(name, admin);
             group.Users = new HashSet<User>()
             {
@@ -64,6 +75,11 @@ namespace SecretSanta.Services
                 .Include(g => g.Users)
                 .FirstOrDefault();
 
+            if (group == null)
+            {
+                throw new ItemNotFoundException(Constants.GROUP_NAME_NOT_FOUND);
+            }
+
             return group;
         }
 
@@ -72,6 +88,22 @@ namespace SecretSanta.Services
             group.hasLinkingProcessStarted = true;
 
             this.unitOfWork.Commit();
+        }
+
+        public IEnumerable<Group> GetGroupsByUser(string username, int skip, int take)
+        {
+            var groups = this.groupRepository.All
+                .Where(g => g.Admin.UserName == username)
+                .ToList();
+
+            if (skip == 0 && take == 0)
+            {
+                take = groups.Count();
+            }
+
+            groups = groups.OrderBy(g => g.Name).Skip(skip).Take(take).ToList();
+
+            return groups;
         }
     }
 }

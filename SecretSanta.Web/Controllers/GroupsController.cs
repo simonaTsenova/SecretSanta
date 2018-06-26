@@ -5,21 +5,25 @@ using System.Net;
 using System.Linq;
 using SecretSanta.Web.Models.Users;
 using SecretSanta.Web.Models;
+using SecretSanta.Authentication.Contracts;
+using SecretSanta.Common.Exceptions;
+using System;
+using SecretSanta.Common;
 
 namespace SecretSanta.Web.Controllers
 {
     public class GroupsController : ApiController
     {
+        private readonly IAuthenticationProvider authenticationProvider;
         private readonly IGroupService groupService;
-        private readonly ISessionService sessionService;
         private readonly IUserService userService;
 
-        public GroupsController(IGroupService groupService, 
-            ISessionService sessionService, 
+        public GroupsController(IAuthenticationProvider authenticationProvider,
+            IGroupService groupService,
             IUserService userService)
         {
+            this.authenticationProvider = authenticationProvider;
             this.groupService = groupService;
-            this.sessionService = sessionService;
             this.userService = userService;
         }
 
@@ -30,7 +34,7 @@ namespace SecretSanta.Web.Controllers
         {
             if(model == null)
             {
-                return this.BadRequest("Group name must be provided");
+                return this.BadRequest(Constants.GROUP_NAME_REQUIRED);
             }
 
             if(!ModelState.IsValid)
@@ -38,20 +42,30 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest(this.ModelState);
             }
 
-            var currentUser = this.sessionService.GetCurrentUser();
-            var existingGroup = this.groupService.GetGroupByName(model.Name);
-            if(existingGroup != null)
+            try
             {
-                return this.Content(HttpStatusCode.Conflict, "Group with that name already exists.");
+                var currentUserId = this.authenticationProvider.CurrentUserId;
+                var admin = this.userService.GetUserById(currentUserId);
+                var group = this.groupService.CreateGroup(model.Name, admin);
+
+                var members = group.Users.Select(u => new DisplayUserViewModel(u.Email, u.FirstName, u.LastName, u.DisplayName, u.UserName))
+                    .ToList();
+                var groupModel = new DisplayGroupViewModel(group.Name, group.Admin.UserName, members);
+
+                return this.Content(HttpStatusCode.Created, groupModel);
             }
-
-            var group = this.groupService.CreateGroup(model.Name, currentUser);
-
-            var members = group.Users.Select(u => new DisplayUserViewModel(u.Email, u.FirstName, u.LastName, u.DisplayName, u.UserName))
-                .ToList();
-            var groupModel = new DisplayGroupViewModel(group.Name, group.Admin.UserName, members);
-
-            return this.Content(HttpStatusCode.Created, groupModel);
+            catch (ItemNotFoundException notFoundException)
+            {
+                return Content(HttpStatusCode.NotFound, notFoundException.Message);
+            }
+            catch (ItemAlreadyExistingException alreadyExistingException)
+            {
+                return this.Content(HttpStatusCode.Conflict, alreadyExistingException.Message);
+            }
+            catch (Exception ex)
+            {
+                return this.Content(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         // GET ~/users/{username}/groups?skip={s}&take={t}
@@ -64,13 +78,13 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest();
             }
 
-            var currentUser = this.sessionService.GetCurrentUser();
-            if (currentUser.UserName != username)
+            var currentUsername = this.authenticationProvider.CurrentUserName;
+            if (currentUsername != username)
             {
-                return this.Content(HttpStatusCode.Forbidden, "Users are only allowed to see their groups.");
+                return this.Content(HttpStatusCode.Forbidden, Constants.GROUP_ACCESS_FORBIDDEN);
             }
 
-            var groups = this.userService.GetUserGroups(currentUser, model.Skip, model.Take);
+            var groups = this.groupService.GetGroupsByUser(currentUsername, model.Skip, model.Take);
             var modelGroups = groups.Select(g => new ShortGroupViewModel(g.Name, g.Admin.UserName));
 
             return this.Ok(modelGroups);
@@ -86,22 +100,29 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest();
             }
 
-            var group = this.groupService.GetGroupByName(groupname);
-            if(group == null)
+            try
             {
-                return this.Content(HttpStatusCode.NotFound, "Group with this name does not exist.");
-            }
+                var group = this.groupService.GetGroupByName(groupname);
 
-            var currentUser = this.sessionService.GetCurrentUser();
-            if(group.Admin.UserName != currentUser.UserName)
+                var currentUserId = this.authenticationProvider.CurrentUserId;
+                if (group.Admin.Id != currentUserId)
+                {
+                    return this.Content(HttpStatusCode.Forbidden, Constants.GROUP_ACCESS_FORBIDDEN);
+                }
+
+                var participants = group.Users;
+                var modelParticipants = participants.Select(p => new DisplayUserViewModel(p.Email, p.FirstName, p.LastName, p.DisplayName, p.UserName));
+
+                return this.Content(HttpStatusCode.OK, modelParticipants);
+            }
+            catch (ItemNotFoundException notFoundException)
             {
-                return this.Content(HttpStatusCode.Forbidden, "This user is not admin of the group.");
+                return Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-
-            var participants = group.Users;
-            var modelParticipants = participants.Select(p => new DisplayUserViewModel(p.Email, p.FirstName, p.LastName, p.DisplayName, p.UserName));
-
-            return this.Content(HttpStatusCode.OK, modelParticipants);
+            catch (Exception ex)
+            {
+                return this.Content(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         // DELETE ~/groups/{groupName}/participants/{participantUsername}
@@ -114,31 +135,29 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest();
             }
 
-            var participant = this.userService.GetUserByUserName(participantUsername);
-            if(participant == null)
+            try
             {
-                return this.Content(HttpStatusCode.NotFound, "Participant does not exist.");
-            }
+                var group = this.groupService.GetGroupByName(groupname);
 
-            var group = this.groupService.GetGroupByName(groupname);
-            if(group == null)
+                var currentUserId = this.authenticationProvider.CurrentUserId;
+                if (currentUserId != group.Admin.Id)
+                {
+                    return this.Content(HttpStatusCode.Forbidden, Constants.REMOVE_PARTICIPANT_FORBIDDEN);
+                }
+
+                var participant = this.userService.GetUserByUserName(participantUsername);
+                this.groupService.RemoveParticipant(group, participant);
+
+                return this.StatusCode(HttpStatusCode.NoContent);
+            }
+            catch (ItemNotFoundException notFoundException)
             {
-                return this.Content(HttpStatusCode.NotFound, "Group with this name does not exist.");
+                return this.Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-
-            var currentUser = this.sessionService.GetCurrentUser();
-            if(currentUser.UserName != group.Admin.UserName)
+            catch (Exception ex)
             {
-                return this.Content(HttpStatusCode.Forbidden, "Only administrators are allowed to remove participants from group.");
+                return this.Content(HttpStatusCode.InternalServerError, ex.Message);
             }
-
-            var isSuccess = this.groupService.RemoveParticipant(group, participant);
-            if(!isSuccess)
-            {
-                return this.Content(HttpStatusCode.NotFound, "Participant does not exist in this group.");
-            }
-
-            return this.StatusCode(HttpStatusCode.NoContent);
         }
     }
 }

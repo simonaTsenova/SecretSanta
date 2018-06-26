@@ -1,5 +1,7 @@
 ﻿using SecretSanta.Models;
+using SecretSanta.Models.Enumerations;
 using System;
+using System.Collections.Generic;
 
 namespace SecretSanta.Services.Contracts
 {
@@ -7,7 +9,9 @@ namespace SecretSanta.Services.Contracts
     {
         Invitation GetById(string id);
 
-        Invitation GetByGroupAndUser(string group, string user);
+        Invitation GetByGroupAndUser(Guid group, string user);
+
+        IEnumerable<Invitation> GetByUser(string username, int skip, int take, OrderType order);
 
         void CreateInvitation(Guid groupId, DateTime sentDate, string receiverId);
 
