@@ -82,9 +82,9 @@ namespace SecretSanta.Services
 
         public void CheckLinkingProcessStarted(Group group)
         {
-            if (!group.hasLinkingProcessStarted)
+            if (group.hasLinkingProcessStarted)
             {
-                throw new ItemNotFoundException(Constants.LINKING_PROCESS_NOT_STARTED);
+                throw new ItemAlreadyExistingException(Constants.LINKING_PROCESS_ALREADY_DONE);
             }
         }
     }

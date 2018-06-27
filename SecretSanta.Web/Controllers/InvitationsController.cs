@@ -6,7 +6,6 @@ using SecretSanta.Web.Mapper;
 using SecretSanta.Web.Models;
 using SecretSanta.Web.Models.Invitations;
 using System;
-using System.Linq;
 using System.Net;
 using System.Web.Http;
 

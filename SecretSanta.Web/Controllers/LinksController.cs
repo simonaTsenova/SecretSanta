@@ -91,13 +91,17 @@ namespace SecretSanta.Web.Controllers
 
                 return this.Content(HttpStatusCode.Created, Constants.LINKING_PROCESS_COMPLETE_SUCCESS);
             }
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
             catch (ItemNotFoundException notFoundException)
             {
                 return Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-            catch (AccessForbiddenException accessForbiddenException)
+            catch (ItemAlreadyExistingException alreadyExistingException)
             {
-                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+                return this.Content(HttpStatusCode.Conflict, alreadyExistingException.Message);
             }
             catch (Exception ex)
             {
