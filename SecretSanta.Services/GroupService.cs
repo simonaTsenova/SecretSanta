@@ -16,8 +16,9 @@ namespace SecretSanta.Services
         private readonly IEfRepository<Group> groupRepository;
         private readonly IUnitOfWork unitOfWork;
 
-        public GroupService(IGroupFactory groupFactory, IEfRepository<Group> groupRepository, 
-            IUnitOfWork unitOfWork, IUserService userService)
+        public GroupService(IGroupFactory groupFactory, 
+            IEfRepository<Group> groupRepository, 
+            IUnitOfWork unitOfWork)
         {
             this.groupFactory = groupFactory;
             this.groupRepository = groupRepository;
