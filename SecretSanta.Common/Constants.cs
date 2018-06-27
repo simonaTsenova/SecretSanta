@@ -30,8 +30,7 @@
         public const string LINKING_PROCESS_NOT_STARTED = "Linking process has not started yet.";
         public const string LINKING_PROCESS_ALREADY_DONE = "Linking process has already been done for this group.";
         public const string LINKING_PROCESS_COMPLETE_SUCCESS = "Linking process has been successfully completed for this group";
-        public const string LINKING_PROCESS_MEMBERS_MINIMUM_COUNT = "Linking process can start only in groups with more than 1 members.";
-        public const string LINKING_PROCESS_MEMBERS_ODD_COUNT = "Linking process cannot start in a group with odd number of members.";
+        public const string LINKING_PROCESS_MEMBERS_ERROR = "Linking process can start only in groups with more than 1 members and cannot start in a group with odd members count.";
         public const string LINKING_PROCESS_START_FORBIDDEN = "You must be an admin to start linking.";
     }
 }

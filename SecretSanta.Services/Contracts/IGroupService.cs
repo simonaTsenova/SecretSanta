@@ -16,5 +16,7 @@ namespace SecretSanta.Services.Contracts
         void MakeProcessStarted(Group group);
 
         IEnumerable<Group> GetGroupsByUser(string username, int skip, int take);
+
+        void CheckUserAcccessRights(string currentUsername, string username);
     }
 }

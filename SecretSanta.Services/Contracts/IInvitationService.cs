@@ -16,5 +16,9 @@ namespace SecretSanta.Services.Contracts
         void CreateInvitation(Guid groupId, DateTime sentDate, string receiverId);
 
         void DeleteInvitation(Invitation invitation);
+
+        void CheckUserAcccessRights(string currentUsername, string username);
+
+        Invitation GetUserInvitation(Guid groupId, string userId);
     }
 }

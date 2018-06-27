@@ -2,8 +2,6 @@
 using SecretSanta.Web.Models.Groups;
 using System.Web.Http;
 using System.Net;
-using System.Linq;
-using SecretSanta.Web.Models.Users;
 using SecretSanta.Web.Models;
 using SecretSanta.Authentication.Contracts;
 using SecretSanta.Common.Exceptions;
@@ -77,25 +75,33 @@ namespace SecretSanta.Web.Controllers
         {
             if (string.IsNullOrEmpty(username) || model == null)
             {
-                return this.BadRequest();
+                return this.BadRequest(Constants.INVALID_MODEL);
             }
 
-            var currentUsername = this.authenticationProvider.CurrentUserName;
-            if (currentUsername != username)
+            try
             {
-                return this.Content(HttpStatusCode.Forbidden, Constants.GROUP_ACCESS_FORBIDDEN);
+                var currentUsername = this.authenticationProvider.CurrentUserName;
+                this.groupService.CheckUserAcccessRights(currentUsername, username);
+
+                var groups = this.groupService.GetGroupsByUser(currentUsername, model.Skip, model.Take);
+                var modelGroups = this.mapper.MapShortGroups(groups);
+
+                return this.Ok(modelGroups);
             }
-
-            var groups = this.groupService.GetGroupsByUser(currentUsername, model.Skip, model.Take);
-            var modelGroups = this.mapper.MapShortGroups(groups);
-
-            return this.Ok(modelGroups);
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
+            catch (Exception ex)
+            {
+                return this.Content(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         // GET ~/groups/{groupname}/participants
         [HttpGet]
         [Route("api/groups/{groupname}/participants")]
-        public IHttpActionResult GetGroupParticipants(string groupname)
+        public IHttpActionResult GetParticipants(string groupname)
         {
             if (groupname == null)
             {
@@ -105,11 +111,8 @@ namespace SecretSanta.Web.Controllers
             try
             {
                 var group = this.groupService.GetGroupByName(groupname);
-                var currentUserId = this.authenticationProvider.CurrentUserId;
-                if (group.Admin.Id != currentUserId)
-                {
-                    return this.Content(HttpStatusCode.Forbidden, Constants.GROUP_ACCESS_FORBIDDEN);
-                }
+                var currentUsername = this.authenticationProvider.CurrentUserName;
+                this.groupService.CheckUserAcccessRights(currentUsername, group.Admin.UserName);
 
                 var modelParticipants = this.mapper.MapUsers(group.Users);
 
@@ -118,6 +121,10 @@ namespace SecretSanta.Web.Controllers
             catch (ItemNotFoundException notFoundException)
             {
                 return Content(HttpStatusCode.NotFound, notFoundException.Message);
+            }
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
             }
             catch (Exception ex)
             {
@@ -128,7 +135,7 @@ namespace SecretSanta.Web.Controllers
         // DELETE ~/groups/{groupName}/participants/{participantUsername}
         [HttpDelete]
         [Route("api/groups/{groupname}/participants/{participantUsername}")]
-        public IHttpActionResult RemoveGroupParticipant(string groupname, string participantUsername)
+        public IHttpActionResult RemoveParticipant(string groupname, string participantUsername)
         {
             if(string.IsNullOrEmpty(groupname) || string.IsNullOrEmpty(participantUsername))
             {
@@ -138,11 +145,8 @@ namespace SecretSanta.Web.Controllers
             try
             {
                 var group = this.groupService.GetGroupByName(groupname);
-                var currentUserId = this.authenticationProvider.CurrentUserId;
-                if (currentUserId != group.Admin.Id)
-                {
-                    return this.Content(HttpStatusCode.Forbidden, Constants.REMOVE_PARTICIPANT_FORBIDDEN);
-                }
+                var currentUsername = this.authenticationProvider.CurrentUserName;
+                this.groupService.CheckUserAcccessRights(currentUsername, group.Admin.UserName);
 
                 var participant = this.userService.GetUserByUserName(participantUsername);
 
@@ -153,6 +157,10 @@ namespace SecretSanta.Web.Controllers
             catch (ItemNotFoundException notFoundException)
             {
                 return this.Content(HttpStatusCode.NotFound, notFoundException.Message);
+            }
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
             }
             catch (Exception ex)
             {

@@ -4,10 +4,7 @@ using SecretSanta.Common.Exceptions;
 using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Mapper;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 
 namespace SecretSanta.Web.Controllers
@@ -43,27 +40,25 @@ namespace SecretSanta.Web.Controllers
             try
             {
                 var currentUsername = this.authenticationProvider.CurrentUserName;
-                if (currentUsername != username)
-                {
-                    return this.Content(HttpStatusCode.Forbidden, Constants.LINKS_ACCESS_FORBIDDEN);
-                }
+                this.linkService.CheckUserAcccessRights(currentUsername, username);
 
                 var group = this.groupService.GetGroupByName(groupname);
-                if (!group.hasLinkingProcessStarted)
-                {
-                    return this.Content(HttpStatusCode.NotFound, Constants.LINKING_PROCESS_NOT_STARTED);
-                }
+                this.linkService.CheckLinkingProcessStarted(group);
 
                 var link = this.linkService.GetByGroupAndSender(groupname, username);
                 var linkModel = this.mapper.MapLink(link);
 
                 return this.Ok(linkModel);
             }
-            catch(ItemNotFoundException notFoundException)
+            catch (ItemNotFoundException notFoundException)
             {
                 return this.Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-            catch(Exception ex)
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
+            catch (Exception ex)
             {
                 return this.Content(HttpStatusCode.InternalServerError, ex.Message);
             }
@@ -82,37 +77,29 @@ namespace SecretSanta.Web.Controllers
             try
             {
                 var group = this.groupService.GetGroupByName(groupname);
-                if (group.hasLinkingProcessStarted)
-                {
-                    return this.Content(HttpStatusCode.PreconditionFailed, Constants.LINKING_PROCESS_ALREADY_DONE);
-                }
+                this.linkService.CheckLinkingProcessStarted(group);
 
-                if (group.Users.Count < 2 || group.Users == null)
+                if (group.Users.Count < 2 || group.Users == null || group.Users.Count % 2 != 0)
                 {
-                    return this.Content(HttpStatusCode.PreconditionFailed, Constants.LINKING_PROCESS_MEMBERS_MINIMUM_COUNT);
-                }
-
-                if (group.Users.Count % 2 != 0)
-                {
-                    return this.Content(HttpStatusCode.PreconditionFailed, Constants.LINKING_PROCESS_MEMBERS_ODD_COUNT);
+                    return this.Content(HttpStatusCode.PreconditionFailed, Constants.LINKING_PROCESS_MEMBERS_ERROR);
                 }
 
                 var currentUserId = this.authenticationProvider.CurrentUserId;
-                if (currentUserId != group.Admin.Id)
-                {
-                    return this.Content(HttpStatusCode.Forbidden, Constants.LINKING_PROCESS_START_FORBIDDEN);
-                }
+                this.linkService.CreateLinks(group, currentUserId);
 
-                this.linkService.CreateLinks(group);
                 this.groupService.MakeProcessStarted(group);
 
                 return this.Content(HttpStatusCode.Created, Constants.LINKING_PROCESS_COMPLETE_SUCCESS);
             }
-            catch(ItemNotFoundException notFoundException)
+            catch (ItemNotFoundException notFoundException)
             {
                 return Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-            catch(Exception ex)
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
+            catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, ex.Message);
             }

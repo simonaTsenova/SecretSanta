@@ -46,13 +46,10 @@ namespace SecretSanta.Web.Controllers
             try
             {
                 var group = this.groupService.GetGroupByName(model.GroupName);
-                var receiver = this.userService.GetUserByUserName(username);
+                var currentUsername = this.authenticationProvider.CurrentUserName;
+                this.invitationService.CheckUserAcccessRights(currentUsername, group.Admin.UserName);
 
-                var currentUserId = this.authenticationProvider.CurrentUserId;
-                if (currentUserId != group.Admin.Id)
-                {
-                    return this.Content(HttpStatusCode.Forbidden, Constants.SEND_INVITATION_FORBIDDEN);
-                }
+                var receiver = this.userService.GetUserByUserName(username);
 
                 this.invitationService.CreateInvitation(group.Id, model.SentDate, receiver.Id);
                 var invitation = this.invitationService.GetByGroupAndUser(group.Id, receiver.Id);
@@ -61,15 +58,19 @@ namespace SecretSanta.Web.Controllers
 
                 return this.Content(HttpStatusCode.Created, invitationModel);
             }
-            catch(ItemNotFoundException notFoundException)
+            catch (ItemNotFoundException notFoundException)
             {
                 return Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-            catch(ItemAlreadyExistingException alreadyExistingException)
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
+            catch (ItemAlreadyExistingException alreadyExistingException)
             {
                 return Content(HttpStatusCode.Conflict, alreadyExistingException.Message);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, ex.Message);
             }
@@ -85,22 +86,29 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest(Constants.INVALID_MODEL);
             }
 
-            var currentUsername = this.authenticationProvider.CurrentUserName;
-            if (currentUsername != username)
+            try
             {
-                return this.Content(HttpStatusCode.Forbidden, Constants.INVITATION_ACCESS_FORBIDDEN);
+                var currentUsername = this.authenticationProvider.CurrentUserName;
+                this.invitationService.CheckUserAcccessRights(currentUsername, username);
+
+                var invitations = this.invitationService.GetByUser(currentUsername, model.Skip, model.Take, model.Order);
+                var invitationsModel = this.mapper.MapInvitations(invitations);
+
+                return this.Ok(invitationsModel);
             }
-
-            var invitations = this.invitationService.GetByUser(currentUsername, model.Skip, model.Take, model.Order);
-
-            var invitationsModel = this.mapper.MapInvitations(invitations);
-
-            return this.Ok(invitationsModel);
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
+            catch (Exception ex)
+            {
+                return this.Content(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
-        // POST ~/groups/{groupName}/participants
+        // POST ~/groups/{groupName}/invitations
         [HttpPost]
-        [Route("api/groups/{groupname}/participants")]
+        [Route("api/groups/{groupname}/invitations")]
         public IHttpActionResult AcceptInvitation(string groupname)
         {
             if (string.IsNullOrEmpty(groupname))
@@ -110,30 +118,28 @@ namespace SecretSanta.Web.Controllers
 
             try
             {
-                var currentUserId = this.authenticationProvider.CurrentUserId;
-                var currentUser = this.userService.GetUserById(currentUserId);
-                var invitation = currentUser.Invitations.Where(i => i.Group.Name == groupname).FirstOrDefault();
-                if (invitation == null)
-                {
-                    return this.Content(HttpStatusCode.Forbidden, Constants.USER_HAS_NO_INVITATIONS_FOR_GROUP);
-                }
-
                 var group = this.groupService.GetGroupByName(groupname);
+                var currentUserId = this.authenticationProvider.CurrentUserId;
+                var invitation = this.invitationService.GetUserInvitation(group.Id, currentUserId);
 
-                this.groupService.AddParticipant(group, currentUser);
+                this.groupService.AddParticipant(group, invitation.Receiver);
                 this.invitationService.DeleteInvitation(invitation);
 
                 return this.Ok(Constants.INVITATION_ACCEPT_SUCCESS);
             }
-            catch(ItemNotFoundException notFoundException)
+            catch (ItemNotFoundException notFoundException)
             {
                 return Content(HttpStatusCode.NotFound, notFoundException.Message);
             }
-            catch(ItemAlreadyExistingException alreadyExistingException)
+            catch (ItemAlreadyExistingException alreadyExistingException)
             {
                 return Content(HttpStatusCode.Conflict, alreadyExistingException.Message);
             }
-            catch(Exception ex)
+            catch (AccessForbiddenException forbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, forbiddenException.Message);
+            }
+            catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, ex.Message);
             }
@@ -149,21 +155,30 @@ namespace SecretSanta.Web.Controllers
                 return this.BadRequest(Constants.INVALID_MODEL);
             }
 
-            var currentUsername = this.authenticationProvider.CurrentUserName;
-            if (currentUsername != username)
+            try
             {
-                return this.Content(HttpStatusCode.Forbidden, Constants.INVITATION_ACCESS_FORBIDDEN);
-            }
+                var currentUsername = this.authenticationProvider.CurrentUserName;
+                this.invitationService.CheckUserAcccessRights(currentUsername, username);
 
-            var invitation = this.invitationService.GetById(id);
-            if (invitation.Receiver.UserName != currentUsername)
+                var invitation = this.invitationService.GetById(id);
+                this.invitationService.CheckUserAcccessRights(currentUsername, invitation.Receiver.UserName);
+
+                this.invitationService.DeleteInvitation(invitation);
+
+                return this.StatusCode(HttpStatusCode.NoContent);
+            }
+            catch (ItemNotFoundException itemNotFoundException)
             {
-                return this.Content(HttpStatusCode.Conflict, Constants.INVITATION_ACCESS_FORBIDDEN);
+                return this.Content(HttpStatusCode.NotFound, itemNotFoundException.Message);
             }
-
-            this.invitationService.DeleteInvitation(invitation);
-
-            return this.StatusCode(HttpStatusCode.NoContent);
+            catch (AccessForbiddenException accessForbiddenException)
+            {
+                return this.Content(HttpStatusCode.Forbidden, accessForbiddenException.Message);
+            }
+            catch (Exception exception)
+            {
+                return this.Content(HttpStatusCode.InternalServerError, exception.Message);
+            }
         }
     }
 }

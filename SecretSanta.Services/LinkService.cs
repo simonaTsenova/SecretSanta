@@ -28,7 +28,7 @@ namespace SecretSanta.Services
                 .Where(l => l.Group.Name == groupname && l.Sender.UserName == senderUsername)
                 .FirstOrDefault();
 
-            if(link == null)
+            if (link == null)
             {
                 throw new ItemNotFoundException(Constants.LINK_NOT_FOUND);
             }
@@ -36,8 +36,13 @@ namespace SecretSanta.Services
             return link;
         }
 
-        public void CreateLinks(Group group)
+        public void CreateLinks(Group group, string currentUserId)
         {
+            if (currentUserId != group.Admin.Id)
+            {
+                throw new AccessForbiddenException(Constants.LINKING_PROCESS_START_FORBIDDEN);
+            }
+
             var members = group.Users.ToList();
             var availableReceivers = Enumerable.Range(0, members.Count).ToList();
             var random = new Random();
@@ -65,6 +70,22 @@ namespace SecretSanta.Services
 
             this.linkRepository.Add(link);
             this.unitOfWork.Commit();
+        }
+
+        public void CheckUserAcccessRights(string currentUsername, string username)
+        {
+            if (currentUsername != username)
+            {
+                throw new AccessForbiddenException(Constants.LINKS_ACCESS_FORBIDDEN);
+            }
+        }
+
+        public void CheckLinkingProcessStarted(Group group)
+        {
+            if (!group.hasLinkingProcessStarted)
+            {
+                throw new ItemNotFoundException(Constants.LINKING_PROCESS_NOT_STARTED);
+            }
         }
     }
 }

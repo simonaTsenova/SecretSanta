@@ -6,6 +6,10 @@ namespace SecretSanta.Services.Contracts
     {
         Link GetByGroupAndSender(string groupname, string senderUsername);
 
-        void CreateLinks(Group group);
+        void CreateLinks(Group group, string currentUserId);
+
+        void CheckUserAcccessRights(string currentUsername, string username);
+
+        void CheckLinkingProcessStarted(Group group);
     }
 }

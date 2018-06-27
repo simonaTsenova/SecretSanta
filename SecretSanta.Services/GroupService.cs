@@ -49,22 +49,26 @@ namespace SecretSanta.Services
 
         public Group CreateGroup(string name, User admin)
         {
-            var existingGroup = this.groupRepository.All
-                .Where(g => g.Name == name)
-                .FirstOrDefault();
-            if (existingGroup != null)
+            Group group;
+            try
             {
-                throw new ItemAlreadyExistingException(Constants.GROUP_NAME_ALREADY_EXISTS);
+                group = this.GetGroupByName(name);
+                if (group != null)
+                {
+                    throw new ItemAlreadyExistingException(Constants.GROUP_NAME_ALREADY_EXISTS);
+                }
             }
-
-            var group = this.groupFactory.Create(name, admin);
-            group.Users = new HashSet<User>()
+            catch (ItemNotFoundException)
             {
-                admin
-            };
+                group = this.groupFactory.Create(name, admin);
+                group.Users = new HashSet<User>()
+                {
+                    admin
+                };
 
-            this.groupRepository.Add(group);
-            this.unitOfWork.Commit();
+                this.groupRepository.Add(group);
+                this.unitOfWork.Commit();
+            }
 
             return group;
         }
@@ -106,6 +110,14 @@ namespace SecretSanta.Services
             groups = groups.OrderBy(g => g.Name).Skip(skip).Take(take).ToList();
 
             return groups;
+        }
+
+        public void CheckUserAcccessRights(string currentUsername, string username)
+        {
+            if (currentUsername != username)
+            {
+                throw new AccessForbiddenException(Constants.GROUP_ACCESS_FORBIDDEN);
+            }
         }
     }
 }
