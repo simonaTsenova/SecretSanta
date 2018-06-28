@@ -59,14 +59,7 @@ namespace SecretSanta.Services
                 .Where(i => i.Receiver.UserName == username)
                 .ToList();
 
-            if (order == OrderType.Descending)
-            {
-                invitations = invitations.OrderByDescending(i => i.SentDate).ToList();
-            }
-            else
-            {
-                invitations = invitations.OrderBy(i => i.SentDate).ToList();
-            }
+            invitations = this.OrderInvitations(order, invitations).ToList();
 
             if (skip == 0 && take == 0)
             {
@@ -123,6 +116,20 @@ namespace SecretSanta.Services
             {
                 throw new AccessForbiddenException(Constants.USER_HAS_NO_INVITATIONS_FOR_GROUP);
             }
+        }
+
+        private IList<Invitation> OrderInvitations(OrderType orderType, IList<Invitation> invitations)
+        {
+            if (orderType == OrderType.Descending)
+            {
+                invitations = invitations.OrderByDescending(i => i.SentDate).ToList();
+            }
+            else
+            {
+                invitations = invitations.OrderBy(i => i.SentDate).ToList();
+            }
+
+            return invitations;
         }
     }
 }
