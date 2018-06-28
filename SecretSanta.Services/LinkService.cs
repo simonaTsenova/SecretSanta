@@ -64,7 +64,7 @@ namespace SecretSanta.Services
             }
         }
 
-        private void CreateLink(Group group, User sender, User receiver)
+        public void CreateLink(Group group, User sender, User receiver)
         {
             var link = this.linkFactory.Create(group, sender, receiver);
 
