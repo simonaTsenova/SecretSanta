@@ -133,8 +133,6 @@ namespace SecretSanta.Tests.SecretSanta.Web.Controllers.GroupsControllerTests
             Assert.AreEqual(HttpStatusCode.InternalServerError, resultContent.StatusCode);
         }
 
-        [Test]
-
         [SetUp]
         public void SetUp()
         {
