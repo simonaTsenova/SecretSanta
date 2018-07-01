@@ -2,17 +2,21 @@
 using System.Linq;
 using Moq;
 using NUnit.Framework;
+using SecretSanta.Authentication.Contracts;
 using SecretSanta.Common;
 using SecretSanta.Data.Contracts;
 using SecretSanta.Models;
 using SecretSanta.Services;
 using SecretSanta.Common.Exceptions;
+using SecretSanta.Factories;
 
 namespace SecretSanta.Tests.SecretSanta.Services.UsersServiceTests
 {
     [TestFixture]
     public class GetUserByUserName_Should
     {
+        private Mock<IAuthenticationProvider> authenticationProviderMock;
+        private Mock<IUserFactory> factoryMock;
         private Mock<IEfRepository<User>> repositoryMock;
         private UserService service;
         private IEnumerable<User> users;
@@ -45,10 +49,13 @@ namespace SecretSanta.Tests.SecretSanta.Services.UsersServiceTests
 
             this.expectedUser = users.First(u => u.UserName.Equals(USERNAME));
 
+            this.authenticationProviderMock = new Mock<IAuthenticationProvider>();
+            this.factoryMock = new Mock<IUserFactory>();
             this.repositoryMock = new Mock<IEfRepository<User>>();
             this.repositoryMock.Setup(r => r.All).Returns(this.users.AsQueryable());
 
-            this.service = new UserService(repositoryMock.Object);
+            this.service = new UserService(authenticationProviderMock.Object,
+                factoryMock.Object, repositoryMock.Object);
         }
     }
 }

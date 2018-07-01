@@ -6,7 +6,6 @@ using NUnit.Framework;
 using SecretSanta.Authentication.Contracts;
 using SecretSanta.Common;
 using SecretSanta.Common.Exceptions;
-using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Services.Contracts;
 using SecretSanta.Web.Controllers;
@@ -20,7 +19,6 @@ namespace SecretSanta.Tests.SecretSanta.Web.Controllers.UsersControllerTests
     {
         private Mock<IAuthenticationProvider> authenticationProviderMock;
         private Mock<IUserService> userServiceMock;
-        private Mock<IUserFactory> userFactoryMock;
         private Mock<IMapper> mapperMock;
         private UsersController controller;
         private User user;
@@ -102,12 +100,11 @@ namespace SecretSanta.Tests.SecretSanta.Web.Controllers.UsersControllerTests
             this.userServiceMock.Setup(s => s.GetUserByUserName(USER_NAME)).Returns(this.user);
             this.userServiceMock.Setup(s => s.GetUserByUserName("Non existing username"))
                 .Throws<ItemNotFoundException>();
-            this.userFactoryMock = new Mock<IUserFactory>();
             this.mapperMock = new Mock<IMapper>();
             this.mapperMock.Setup(m => m.MapUser(this.user)).Returns(this.resultViewModel);
 
             this.controller = new UsersController(authenticationProviderMock.Object,
-                userServiceMock.Object, userFactoryMock.Object, mapperMock.Object);
+                userServiceMock.Object, mapperMock.Object);
         }
     }
 }

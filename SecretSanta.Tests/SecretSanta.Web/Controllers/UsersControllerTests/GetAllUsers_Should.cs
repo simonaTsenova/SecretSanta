@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Web.Http.Results;
 using Moq;
 using NUnit.Framework;
 using SecretSanta.Authentication.Contracts;
 using SecretSanta.Common;
-using SecretSanta.Factories;
 using SecretSanta.Models;
 using SecretSanta.Models.Enumerations;
 using SecretSanta.Services.Contracts;
@@ -21,7 +19,6 @@ namespace SecretSanta.Tests.SecretSanta.Web.Controllers.UsersControllerTests
     {
         private Mock<IAuthenticationProvider> authenticationProviderMock;
         private Mock<IUserService> userServiceMock;
-        private Mock<IUserFactory> userFactoryMock;
         private Mock<IMapper> mapperMock;
         private UsersController controller;
         private ResultFormatViewModel model;
@@ -90,12 +87,11 @@ namespace SecretSanta.Tests.SecretSanta.Web.Controllers.UsersControllerTests
             this.authenticationProviderMock = new Mock<IAuthenticationProvider>();
             this.userServiceMock = new Mock<IUserService>();
             this.userServiceMock.Setup(s => s.GetAllUsers(SKIP, TAKE, OrderType.Ascending, SEARCH)).Returns(this.users);
-            this.userFactoryMock = new Mock<IUserFactory>();
             this.mapperMock = new Mock<IMapper>();
             this.mapperMock.Setup(m => m.MapUsers(this.users)).Returns(this.resultViewModels);
 
             this.controller = new UsersController(authenticationProviderMock.Object,
-                userServiceMock.Object, userFactoryMock.Object, mapperMock.Object);
+                userServiceMock.Object, mapperMock.Object);
         }
     }
 }

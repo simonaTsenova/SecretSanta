@@ -6,12 +6,16 @@ using SecretSanta.Models.Enumerations;
 using SecretSanta.Services;
 using System.Collections.Generic;
 using System.Linq;
+using SecretSanta.Authentication.Contracts;
+using SecretSanta.Factories;
 
 namespace SecretSanta.Tests.SecretSanta.Services.UsersServiceTests
 {
     [TestFixture]
     public class GetAllUsers_Should
     {
+        private Mock<IAuthenticationProvider> authenticationProviderMock;
+        private Mock<IUserFactory> factoryMock;
         private Mock<IEfRepository<User>> repositoryMock;
         private UserService service;
         private IEnumerable<User> users;
@@ -58,10 +62,13 @@ namespace SecretSanta.Tests.SecretSanta.Services.UsersServiceTests
 
             this.expectedUsers = this.users.Where(u => u.DisplayName.Contains(SEARCH));
 
+            this.authenticationProviderMock = new Mock<IAuthenticationProvider>();
+            this.factoryMock = new Mock<IUserFactory>();
             this.repositoryMock = new Mock<IEfRepository<User>>();
             this.repositoryMock.Setup(r => r.All).Returns(this.users.AsQueryable());
 
-            this.service = new UserService(repositoryMock.Object);
+            this.service = new UserService(authenticationProviderMock.Object,
+                factoryMock.Object, repositoryMock.Object);
         }
     }
 }
