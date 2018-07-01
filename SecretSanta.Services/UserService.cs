@@ -36,23 +36,11 @@ namespace SecretSanta.Services
                 users = users.Where(u => u.UserName.Contains(searchPhrase) || u.DisplayName.Contains(searchPhrase));
             }
 
-            if(order == OrderType.Descending)
-            {
-                users = users.OrderByDescending(u => u.DisplayName);
-            }
-            else
-            {
-                users = users.OrderBy(u => u.DisplayName);
-            }
+            users = this.OrderUsers(order, users);
 
             if(skip == 0 && take == 0)
             {
                 take = users.Count();
-            }
-
-            if(take == 0)
-            {
-                take = 1;
             }
 
             users = users.Skip(skip).Take(take);
@@ -88,6 +76,20 @@ namespace SecretSanta.Services
             }
 
             return user;
+        }
+
+        private IQueryable<User> OrderUsers(OrderType orderType, IQueryable<User> users)
+        {
+            if (orderType == OrderType.Descending)
+            {
+                users = users.OrderByDescending(u => u.DisplayName);
+            }
+            else
+            {
+                users = users.OrderBy(u => u.DisplayName);
+            }
+
+            return users;
         }
 
         public IdentityResult CreateUser(string email, string username, 
