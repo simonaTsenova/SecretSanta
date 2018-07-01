@@ -8,15 +8,15 @@ using System.Net.Http;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
+using SecretSanta.Common.Exceptions;
 using SecretSanta.Providers.Contracts;
 
 namespace SecretSanta.Authentication
 {
     public class AuthenticationProvider : IAuthenticationProvider
     {
-        private const string TOKEN_ENDPOINT_PATH = "/token";
-        private ApplicationUserManager applicationUserManager;
         private IHttpContextProvider httpContextProvider;
+        private ApplicationUserManager applicationUserManager;
 
         public AuthenticationProvider(IHttpContextProvider httpContextProvider)
         {
@@ -29,7 +29,6 @@ namespace SecretSanta.Authentication
             {
                 if (this.applicationUserManager == null)
                 {
-                    //return Request.GetOwinContext().GetUserManager<ApplicationUserManager>();
                     return httpContextProvider.CurrentHttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
                 }
 
@@ -76,7 +75,13 @@ namespace SecretSanta.Authentication
             var requestParamsEncoded = new FormUrlEncodedContent(requestParams);
             var baseAddress = httpContextProvider.CurrentHttpContext.Request.Url.GetLeftPart(UriPartial.Authority);
             var httpClient = new HttpClient();
-            var response =  await httpClient.PostAsync(baseAddress + TOKEN_ENDPOINT_PATH, requestParamsEncoded);
+            var response =  await httpClient.PostAsync(baseAddress + SecretSanta.Common.Constants.TOKEN_ENDPOINT_PATH, requestParamsEncoded);
+            var responseString = await response.Content.ReadAsStringAsync();
+            if (responseString.Contains("invalid_grant"))
+            {
+                throw new InvalidLoginException(SecretSanta.Common.Constants.INVALID_USER_CREDENTIALS);
+            }
+
             return response;
         }
     }

@@ -1,5 +1,4 @@
-﻿using SecretSanta.Common;
-using SecretSanta.Common.Exceptions;
+﻿using SecretSanta.Common.Exceptions;
 using SecretSanta.Data.Contracts;
 using SecretSanta.Models;
 using SecretSanta.Models.Enumerations;
@@ -7,15 +6,24 @@ using SecretSanta.Services.Contracts;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using Microsoft.AspNet.Identity;
+using SecretSanta.Authentication.Contracts;
+using SecretSanta.Factories;
+using Constants = SecretSanta.Common.Constants;
 
 namespace SecretSanta.Services
 {
     public class UserService : IUserService
     {
+        private readonly IAuthenticationProvider authenticationProvider;
+        private readonly IUserFactory userFactory;
         private readonly IEfRepository<User> userRepository;
 
-        public UserService(IEfRepository<User> userRepository)
+        public UserService(IAuthenticationProvider authenticationProvider,
+            IUserFactory userFactory, IEfRepository<User> userRepository)
         {
+            this.authenticationProvider = authenticationProvider;
+            this.userFactory = userFactory;
             this.userRepository = userRepository;
         }
 
@@ -80,6 +88,15 @@ namespace SecretSanta.Services
             }
 
             return user;
+        }
+
+        public IdentityResult CreateUser(string email, string username, 
+            string displayName, string firstname, string lastname, string password)
+        { 
+            var user = this.userFactory.Create(email, username, displayName, firstname, lastname);
+            var identityResult = this.authenticationProvider.RegisterUser(user, password);
+
+            return identityResult;
         }
     }
 }

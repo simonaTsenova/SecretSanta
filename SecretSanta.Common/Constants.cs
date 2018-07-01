@@ -32,5 +32,8 @@
         public const string LINKING_PROCESS_COMPLETE_SUCCESS = "Linking process has been successfully completed for this group";
         public const string LINKING_PROCESS_MEMBERS_ERROR = "Linking process can start only in groups with more than 1 members and cannot start in a group with odd members count.";
         public const string LINKING_PROCESS_START_FORBIDDEN = "You must be an admin to start linking.";
+
+        public const string TOKEN_ENDPOINT_PATH = "/token";
+        public const string PUBLIC_CLIENT_ID = "self";
     }
 }

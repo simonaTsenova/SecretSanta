@@ -22,7 +22,6 @@ namespace SecretSanta.Authentication.Managers
                 AllowOnlyAlphanumericUserNames = false,
                 RequireUniqueEmail = true
             };
-
             manager.PasswordValidator = new PasswordValidator
             {
                 RequiredLength = 6,
@@ -33,6 +32,7 @@ namespace SecretSanta.Authentication.Managers
             {
                 manager.UserTokenProvider = new DataProtectorTokenProvider<User>(dataProtectionProvider.Create("ASP.NET Identity"));
             }
+
             return manager;
         }
     }
