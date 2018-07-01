@@ -105,7 +105,7 @@ namespace SecretSanta.Services
 
             if (skip == 0 && take == 0)
             {
-                take = groups.Count();
+                take = groups.Count;
             }
 
             groups = groups.OrderBy(g => g.Name).Skip(skip).Take(take).ToList();

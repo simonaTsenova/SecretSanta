@@ -40,10 +40,10 @@ namespace SecretSanta.Web
 
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IGroupFactory>(builder).ReturningConcreteType();
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IUserFactory>(builder).ReturningConcreteType();
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<ILinkFactory>(builder).ReturningConcreteType();
-            AutofacTypedFactoryExtensions.RegisterTypedFactory<IInvitationFactory>(builder).ReturningConcreteType();
+            builder.RegisterTypedFactory<IGroupFactory>().ReturningConcreteType();
+            builder.RegisterTypedFactory<IUserFactory>().ReturningConcreteType();
+            builder.RegisterTypedFactory<ILinkFactory>().ReturningConcreteType();
+            builder.RegisterTypedFactory<IInvitationFactory>().ReturningConcreteType();
 
             builder.RegisterType<UserService>().As<IUserService>().InstancePerRequest();
             builder.RegisterType<GroupService>().As<IGroupService>().InstancePerRequest();

@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNet.Identity.Owin;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
 using SecretSanta.Authentication.Managers;
 using SecretSanta.Common;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
-namespace SecretSanta.Web.Providers
+namespace SecretSanta.Authentication
 {
     public class ApplicationOAuthProvider : OAuthAuthorizationServerProvider
     {
@@ -22,9 +22,7 @@ namespace SecretSanta.Web.Providers
         public override async Task GrantResourceOwnerCredentials(OAuthGrantResourceOwnerCredentialsContext context)
         {
             var userManager = context.OwinContext.GetUserManager<ApplicationUserManager>();
-
             var user = await userManager.FindAsync(context.UserName, context.Password);
-
             if (user == null)
             {
                 context.SetError("invalid_grant", Constants.INVALID_USER_CREDENTIALS);
@@ -35,7 +33,6 @@ namespace SecretSanta.Web.Providers
                 OAuthDefaults.AuthenticationType);
             ClaimsIdentity cookiesIdentity = await user.GenerateUserIdentityAsync(userManager,
                 CookieAuthenticationDefaults.AuthenticationType);
-
             AuthenticationProperties properties = CreateProperties(user.UserName);
             AuthenticationTicket ticket = new AuthenticationTicket(oAuthIdentity, properties);
             context.Validated(ticket);
